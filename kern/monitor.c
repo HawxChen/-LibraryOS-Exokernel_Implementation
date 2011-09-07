@@ -44,15 +44,15 @@ mon_help(int argc, char **argv, struct Trapframe *tf)
 int
 mon_kerninfo(int argc, char **argv, struct Trapframe *tf)
 {
-	extern char _start[], etext[], edata[], end[];
+	extern char entry[], etext[], edata[], end[];
 
 	cprintf("Special kernel symbols:\n");
-	cprintf("  entry  %08x (virt)  %08x (phys)\n", entry , entry  - KERNBASE);
+	cprintf("  entry  %08x (virt)  %08x (phys)\n", entry, entry - KERNBASE);
 	cprintf("  etext  %08x (virt)  %08x (phys)\n", etext, etext - KERNBASE);
 	cprintf("  edata  %08x (virt)  %08x (phys)\n", edata, edata - KERNBASE);
 	cprintf("  end    %08x (virt)  %08x (phys)\n", end, end - KERNBASE);
 	cprintf("Kernel executable memory footprint: %dKB\n",
-		(end-entry +1023)/1024);
+		(end-entry+1023)/1024);
 	return 0;
 }
 
