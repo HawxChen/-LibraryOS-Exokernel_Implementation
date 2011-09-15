@@ -7,13 +7,19 @@
 #
 OBJDIR := obj
 
+# Run 'make V=1' to turn on verbose commands, or 'make V=0' to turn them off.
+ifeq ($(V),1)
+override V =
+endif
+ifeq ($(V),0)
+override V = @
+endif
+
 -include conf/lab.mk
 
 -include conf/env.mk
 
-ifndef LABSETUP
-LABSETUP := ./
-endif
+LABSETUP ?= ./
 
 TOP = .
 

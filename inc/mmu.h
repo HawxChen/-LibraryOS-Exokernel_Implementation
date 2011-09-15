@@ -20,19 +20,17 @@
 // |      Index     |      Index     |                     |
 // +----------------+----------------+---------------------+
 //  \--- PDX(la) --/ \--- PTX(la) --/ \---- PGOFF(la) ----/
-//  \----------- VPN(la) -----------/
+//  \---------- PGNUM(la) ----------/
 //
-// The PDX, PTX, PGOFF, and VPN macros decompose linear addresses as shown.
+// The PDX, PTX, PGOFF, and PGNUM macros decompose linear addresses as shown.
 // To construct a linear address la from PDX(la), PTX(la), and PGOFF(la),
 // use PGADDR(PDX(la), PTX(la), PGOFF(la)).
 
 // page number field of address
-#define PPN(pa)		(((uintptr_t) (pa)) >> PTXSHIFT)
-#define VPN(la)		PPN(la)		// used to index into vpt[]
+#define PGNUM(la)	(((uintptr_t) (la)) >> PTXSHIFT)
 
 // page directory index
 #define PDX(la)		((((uintptr_t) (la)) >> PDXSHIFT) & 0x3FF)
-#define VPD(la)		PDX(la)		// used to index into vpd[]
 
 // page table index
 #define PTX(la)		((((uintptr_t) (la)) >> PTXSHIFT) & 0x3FF)
@@ -71,8 +69,8 @@
 // hardware, so user processes are allowed to set them arbitrarily.
 #define PTE_AVAIL	0xE00	// Available for software use
 
-// Only flags in PTE_ALLOWED may be used in system calls.
-#define PTE_ALLOWED	(PTE_AVAIL | PTE_P | PTE_W | PTE_U)
+// Flags in PTE_SYSCALL may be used in system calls.  (Others may not.)
+#define PTE_SYSCALL	(PTE_AVAIL | PTE_P | PTE_W | PTE_U)
 
 // Address in page table or page directory entry
 #define PTE_ADDR(pte)	((physaddr_t) (pte) & ~0xFFF)
