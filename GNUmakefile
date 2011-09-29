@@ -78,13 +78,14 @@ NM	:= $(GCCPREFIX)nm
 
 # Native commands
 NCC	:= gcc $(CC_VER) -pipe
+NATIVE_CFLAGS := $(CFLAGS) $(DEFS) $(LABDEFS) -I$(TOP) -MD -Wall
 TAR	:= gtar
 PERL	:= perl
 
 # Compiler flags
 # -fno-builtin is required to avoid refs to undefined functions in the kernel.
 # Only optimize to -O1 to discourage inlining, which complicates backtraces.
-CFLAGS := $(CFLAGS) $(DEFS) $(LABDEFS) -O1 -fno-builtin -I$(TOP) -MD 
+CFLAGS := $(CFLAGS) $(DEFS) $(LABDEFS) -O1 -fno-builtin -I$(TOP) -MD
 CFLAGS += -fno-omit-frame-pointer
 CFLAGS += -Wall -Wno-format -Wno-unused -Werror -gstabs -m32
 
@@ -125,6 +126,8 @@ USER_CFLAGS := $(CFLAGS) -DJOS_USER -gstabs
 # Include Makefrags for subdirectories
 include boot/Makefrag
 include kern/Makefrag
+include lib/Makefrag
+include user/Makefrag
 
 
 IMAGES = $(OBJDIR)/kern/kernel.img
@@ -173,12 +176,16 @@ realclean: clean
 distclean: realclean
 	rm -rf conf/gcc.mk
 
+ifneq ($(V),@)
+GRADEFLAGS += -v
+endif
+
 grade: $(LABSETUP)grade-lab$(LAB).sh
 	@echo $(MAKE) clean
 	@$(MAKE) clean || \
 	  (echo "'make clean' failed.  HINT: Do you have another running instance of JOS?" && exit 1)
 	$(MAKE) all
-	sh $(LABSETUP)grade-lab$(LAB).sh
+	sh $(LABSETUP)grade-lab$(LAB).sh $(GRADEFLAGS)
 
 handin: tarball
 	@echo Please visit http://pdos.csail.mit.edu/6.828/submit/
@@ -187,6 +194,27 @@ handin: tarball
 tarball: realclean
 	tar cf - `find . -type f | grep -v '^\.*$$' | grep -v '/CVS/' | grep -v '/\.svn/' | grep -v '/\.git/' | grep -v 'lab[0-9].*\.tar\.gz'` | gzip > lab$(LAB)-handin.tar.gz
 
+# For test runs
+prep-%:
+	$(V)rm -f $(OBJDIR)/kern/init.o $(IMAGES)
+	$(V)$(MAKE) "DEFS=-DTEST=user_$*" $(IMAGES)
+	$(V)rm -f $(OBJDIR)/kern/init.o
+
+run-%-nox-gdb: .gdbinit
+	$(V)$(MAKE) --no-print-directory prep-$*
+	$(QEMU) -nographic $(QEMUOPTS) -S $(QEMUGDB)
+
+run-%-gdb: .gdbinit
+	$(V)$(MAKE) --no-print-directory prep-$*
+	$(QEMU) $(QEMUOPTS) -S $(QEMUGDB)
+
+run-%-nox:
+	$(V)$(MAKE) --no-print-directory prep-$*
+	$(QEMU) -nographic $(QEMUOPTS)
+
+run-%:
+	$(V)$(MAKE) --no-print-directory prep-$*
+	$(QEMU) $(QEMUOPTS)
 
 # This magic automatically generates makefile dependencies
 # for header files included from C source files we compile,

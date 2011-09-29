@@ -150,6 +150,12 @@ lidt(void *p)
 }
 
 static __inline void
+lgdt(void *p)
+{
+	__asm __volatile("lgdt (%0)" : : "r" (p));
+}
+
+static __inline void
 lldt(uint16_t sel)
 {
 	__asm __volatile("lldt %0" : : "r" (sel));
