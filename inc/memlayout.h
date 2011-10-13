@@ -136,6 +136,13 @@
 // The location of the user-level STABS data structure
 #define USTABDATA	(PTSIZE / 2)	
 
+// Physical address of startup code for non-boot CPUs (APs)
+#define MPENTRY_PADDR	0x7000
+
+// The physical address where IO memory starts
+#define IOMEM_PADDR	0xfe000000
+// The virtual address we map IO memory to
+#define IOMEMBASE	0xfe000000
 
 #ifndef __ASSEMBLER__
 
