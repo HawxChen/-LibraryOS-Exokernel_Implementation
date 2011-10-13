@@ -52,7 +52,7 @@ i386_init(void)
  * Variable panicstr contains argument to first call to panic; used as flag
  * to indicate that the kernel has already called panic.
  */
-static const char *panicstr;
+const char *panicstr;
 
 /*
  * Panic is called on unresolvable fatal errors.

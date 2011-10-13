@@ -28,6 +28,5 @@
 
 unsigned mc146818_read(unsigned reg);
 void mc146818_write(unsigned reg, unsigned datum);
-void kclock_init(void);
 
 #endif	// !JOS_KERN_KCLOCK_H

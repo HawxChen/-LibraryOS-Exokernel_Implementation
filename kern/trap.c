@@ -79,12 +79,13 @@ trap_init_percpu(void)
 	ts.ts_esp0 = KSTACKTOP;
 	ts.ts_ss0 = GD_KD;
 
-	// Initialize the TSS field of the gdt.
+	// Initialize the TSS slot of the gdt.
 	gdt[GD_TSS0 >> 3] = SEG16(STS_T32A, (uint32_t) (&ts),
 					sizeof(struct Taskstate), 0);
 	gdt[GD_TSS0 >> 3].sd_s = 0;
 
-	// Load the TSS
+	// Load the TSS selector (like other segment selectors, the
+	// bottom three bits are special; we leave them 0)
 	ltr(GD_TSS0);
 
 	// Load the IDT
@@ -118,8 +119,10 @@ print_trapframe(struct Trapframe *tf)
 	cprintf("  eip  0x%08x\n", tf->tf_eip);
 	cprintf("  cs   0x----%04x\n", tf->tf_cs);
 	cprintf("  flag 0x%08x\n", tf->tf_eflags);
-	cprintf("  esp  0x%08x\n", tf->tf_esp);
-	cprintf("  ss   0x----%04x\n", tf->tf_ss);
+	if ((tf->tf_cs & 3) != 0) {
+		cprintf("  esp  0x%08x\n", tf->tf_esp);
+		cprintf("  ss   0x----%04x\n", tf->tf_ss);
+	}
 }
 
 void

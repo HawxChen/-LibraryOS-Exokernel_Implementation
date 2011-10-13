@@ -63,10 +63,6 @@ endif
 
 # try to generate a unique GDB port
 GDBPORT	:= $(shell expr `id -u` % 5000 + 25000)
-# QEMU's gdb stub command line changed in 0.11
-QEMUGDB = $(shell if $(QEMU) -nographic -help | grep -q '^-gdb'; \
-	then echo "-gdb tcp::$(GDBPORT)"; \
-	else echo "-s -p $(GDBPORT)"; fi)
 
 CC	:= $(GCCPREFIX)gcc -pipe
 AS	:= $(GCCPREFIX)as
@@ -130,16 +126,18 @@ include lib/Makefrag
 include user/Makefrag
 
 
+QEMUOPTS = -hda $(OBJDIR)/kern/kernel.img -serial mon:stdio -gdb tcp::$(GDBPORT) -D qemu.log
 IMAGES = $(OBJDIR)/kern/kernel.img
-QEMUOPTS = -hda $(OBJDIR)/kern/kernel.img -serial mon:stdio $(QEMUEXTRA)
+QEMUOPTS += $(QEMUEXTRA)
+
 
 .gdbinit: .gdbinit.tmpl
 	sed "s/localhost:1234/localhost:$(GDBPORT)/" < $^ > $@
 
-qemu: $(IMAGES)
+qemu: $(IMAGES) .gdbinit
 	$(QEMU) $(QEMUOPTS)
 
-qemu-nox: $(IMAGES)
+qemu-nox: $(IMAGES) .gdbinit
 	@echo "***"
 	@echo "*** Use Ctrl-a x to exit qemu"
 	@echo "***"
@@ -149,13 +147,13 @@ qemu-gdb: $(IMAGES) .gdbinit
 	@echo "***"
 	@echo "*** Now run 'gdb'." 1>&2
 	@echo "***"
-	$(QEMU) $(QEMUOPTS) -S $(QEMUGDB)
+	$(QEMU) $(QEMUOPTS) -S
 
 qemu-nox-gdb: $(IMAGES) .gdbinit
 	@echo "***"
 	@echo "*** Now run 'gdb'." 1>&2
 	@echo "***"
-	$(QEMU) -nographic $(QEMUOPTS) -S $(QEMUGDB)
+	$(QEMU) -nographic $(QEMUOPTS) -S
 
 print-qemu:
 	@echo $(QEMU)
@@ -168,7 +166,7 @@ print-qemugdb:
 
 # For deleting the build
 clean:
-	rm -rf $(OBJDIR) .gdbinit jos.in
+	rm -rf $(OBJDIR) .gdbinit jos.in qemu.log
 
 realclean: clean
 	rm -rf lab$(LAB).tar.gz jos.out
@@ -197,22 +195,22 @@ tarball: realclean
 # For test runs
 prep-%:
 	$(V)rm -f $(OBJDIR)/kern/init.o $(IMAGES)
-	$(V)$(MAKE) "DEFS=-DTEST=user_$*" $(IMAGES)
+	$(V)$(MAKE) "DEFS=-DTEST=$$(case $* in *_*) echo $*;; *) echo user_$*;; esac)" $(IMAGES)
 	$(V)rm -f $(OBJDIR)/kern/init.o
 
 run-%-nox-gdb: .gdbinit
 	$(V)$(MAKE) --no-print-directory prep-$*
-	$(QEMU) -nographic $(QEMUOPTS) -S $(QEMUGDB)
+	$(QEMU) -nographic $(QEMUOPTS) -S
 
 run-%-gdb: .gdbinit
 	$(V)$(MAKE) --no-print-directory prep-$*
-	$(QEMU) $(QEMUOPTS) -S $(QEMUGDB)
+	$(QEMU) $(QEMUOPTS) -S
 
-run-%-nox:
+run-%-nox: .gdbinit
 	$(V)$(MAKE) --no-print-directory prep-$*
 	$(QEMU) -nographic $(QEMUOPTS)
 
-run-%:
+run-%: .gdbinit
 	$(V)$(MAKE) --no-print-directory prep-$*
 	$(QEMU) $(QEMUOPTS)
 

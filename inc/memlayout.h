@@ -23,6 +23,8 @@
  *                                                    kernel/user
  *
  *    4 Gig -------->  +------------------------------+
+ *                     |       Memory-mapped I/O      | RW/--
+ *    IOMEMBASE ---->  +------------------------------+ 0xfe000000
  *                     |                              | RW/--
  *                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *                     :              .               :
@@ -33,11 +35,18 @@
  *                     |   Remapped Physical Memory   | RW/--
  *                     |                              | RW/--
  *    KERNBASE ----->  +------------------------------+ 0xf0000000
- *                     |       Empty Memory (*)       | --/--  PTSIZE
+ *                     |      Invalid Memory (*)      | --/--  PTSIZE
  *    KSTACKTOP ---->  +------------------------------+ 0xefc00000      --+
- *                     |         Kernel Stack         | RW/--  KSTKSIZE   |
+ *                     |     CPU0's Kernel Stack      | RW/--  KSTKSIZE   |
+ *                     | - - - - - - - - - - - - - - -|                   |
+ *                     |      Invalid Memory (*)      | --/--  KSTKGAP    |
+ *                     +------------------------------+                   |
+ *                     |     CPU1's Kernel Stack      | RW/--  KSTKSIZE   |
  *                     | - - - - - - - - - - - - - - -|                 PTSIZE
- *                     |      Invalid Memory (*)      | --/--             |
+ *                     |      Invalid Memory (*)      | --/--  KSTKGAP    |
+ *                     +------------------------------+                   |
+ *                     :              .               :                   |
+ *                     :              .               :                   |
  *    ULIM     ------> +------------------------------+ 0xef800000      --+
  *                     |  Cur. Page Table (User R-)   | R-/R-  PTSIZE
  *    UVPT      ---->  +------------------------------+ 0xef400000
@@ -89,6 +98,7 @@
 // Kernel stack.
 #define KSTACKTOP	(KERNBASE - PTSIZE)
 #define KSTKSIZE	(8*PGSIZE)   		// size of a kernel stack
+#define KSTKGAP		(8*PGSIZE)   		// size of a kernel stack guard
 #define ULIM		(KSTACKTOP - PTSIZE) 
 
 /*
