@@ -690,6 +690,10 @@ check_kern_pgdir(void)
 	for (i = 0; i < npages * PGSIZE; i += PGSIZE)
 		assert(check_va2pa(pgdir, KERNBASE + i) == i);
 
+	// check IO mem (new in lab 4)
+	for (i = IOMEMBASE; i < -PGSIZE; i += PGSIZE)
+		assert(check_va2pa(pgdir, i) == i);
+
 	// check kernel stack
 	// (updated in lab 4 to check per-CPU kernel stacks)
 	for (n = 0; n < NCPU; n++) {
