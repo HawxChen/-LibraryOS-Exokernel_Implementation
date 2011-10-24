@@ -196,7 +196,7 @@ tarball: realclean
 # For test runs
 prep-%:
 	$(V)rm -f $(OBJDIR)/kern/init.o $(IMAGES)
-	$(V)$(MAKE) "DEFS=-DTEST=$$(case $* in *_*) echo $*;; *) echo user_$*;; esac)" $(IMAGES)
+	$(V)$(MAKE) "DEFS=-DTEST=`case $* in *_*) echo $*;; *) echo user_$*;; esac`" $(IMAGES)
 	$(V)rm -f $(OBJDIR)/kern/init.o
 
 run-%-nox-gdb: .gdbinit
