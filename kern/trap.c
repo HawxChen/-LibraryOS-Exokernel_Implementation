@@ -219,10 +219,18 @@ trap(struct Trapframe *tf)
 		// Acquire the big kernel lock before doing any
 		// serious kernel work.
 		// LAB 4: Your code here.
+		assert(curenv);
+
+		// Garbage collect if current enviroment is a zombie
+		if (curenv->env_status == ENV_DYING) {
+			env_free(curenv);
+			curenv = NULL;
+			sched_yield();
+		}
+
 		// Copy trap frame (which is currently on the stack)
 		// into 'curenv->env_tf', so that running the environment
 		// will restart at the trap point.
-		assert(curenv);
 		curenv->env_tf = *tf;
 		// The trapframe on the stack should be ignored from here on.
 		tf = &curenv->env_tf;

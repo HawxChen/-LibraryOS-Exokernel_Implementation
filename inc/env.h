@@ -32,6 +32,7 @@ typedef int32_t envid_t;
 // Values of env_status in struct Env
 enum {
 	ENV_FREE = 0,
+	ENV_DYING,
 	ENV_RUNNABLE,
 	ENV_RUNNING,
 	ENV_NOT_RUNNABLE
