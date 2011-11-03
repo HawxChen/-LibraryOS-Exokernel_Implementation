@@ -190,8 +190,24 @@ handin: tarball
 	@echo Please visit http://pdos.csail.mit.edu/6.828/submit/
 	@echo and upload lab$(LAB)-handin.tar.gz.  Thanks!
 
-tarball: realclean
-	tar cf - `find . -type f | grep -v '^\.*$$' | grep -v '/CVS/' | grep -v '/\.svn/' | grep -v '/\.git/' | grep -v 'lab[0-9].*\.tar\.gz'` | gzip > lab$(LAB)-handin.tar.gz
+tarball:
+	@if test "$$(git symbolic-ref HEAD)" != refs/heads/lab$(LAB); then \
+		git branch; \
+		read -p "You are not on the lab$(LAB) branch.  Handin the current branch? [y/N] " r; \
+		test "$$r" = y; \
+	fi
+	@if ! git diff-files --quiet || ! git diff-index --quiet --cached HEAD; then \
+		git status; \
+		echo; \
+		echo "You have uncomitted changes.  Please commit or stash them."; \
+		false; \
+	fi
+	@if test -n "`git ls-files -o --exclude-standard`"; then \
+		git status; \
+		read -p "Untracked files will not be handed in.  Continue? [y/N] " r; \
+		test "$$r" = y; \
+	fi
+	git archive --format=tar HEAD | gzip > lab$(LAB)-handin.tar.gz
 
 # For test runs
 prep-%:
