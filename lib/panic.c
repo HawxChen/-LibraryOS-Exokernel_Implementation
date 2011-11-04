@@ -1,8 +1,6 @@
 
 #include <inc/lib.h>
 
-const char *argv0;
-
 /*
  * Panic is called on unresolvable fatal errors.
  * It prints "panic: <message>", then causes a breakpoint exception,
@@ -16,8 +14,6 @@ _panic(const char *file, int line, const char *fmt, ...)
 	va_start(ap, fmt);
 
 	// Print the panic message
-	if (argv0)
-		cprintf("%s: ", argv0);
 	cprintf("[%08x] user panic in %s at %s:%d: ",
 		sys_getenvid(), binaryname, file, line);
 	vcprintf(fmt, ap);
