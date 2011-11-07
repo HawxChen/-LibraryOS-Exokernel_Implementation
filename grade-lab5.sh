@@ -6,6 +6,9 @@ qemuopts="-hda obj/kern/kernel.img -hdb obj/fs/fs.img"
 
 $make
 
+qemuopts_orig="$qemuopts"
+qemuopts="$qemuopts -snapshot"
+
 runtest1 -tag 'fs i/o [fs]' hello \
 	'FS can do I/O' \
 	! 'idle loop can do I/O' \
@@ -53,6 +56,8 @@ quicktest 'open [testfile]' \
 
 quicktest 'large file [testfile]' \
 	'large file is good'
+
+qemuopts="$qemuopts_orig"
 
 pts=10
 runtest1 -tag 'motd display [writemotd]' writemotd \
