@@ -115,7 +115,7 @@ opendisk(const char *name)
 	strcpy(super->s_root.f_name, "/");
 
 	nbitblocks = (nblocks + BLKBITSIZE - 1) / BLKBITSIZE;
-	bitmap = alloc(nbitblocks);
+	bitmap = alloc(nbitblocks * BLKSIZE);
 	memset(bitmap, 0xFF, nbitblocks * BLKSIZE);
 }
 
