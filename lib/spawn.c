@@ -90,7 +90,7 @@ spawn(const char *prog, const char **argv)
 
 	// Read elf header
 	elf = (struct Elf*) elf_buf;
-	if (read(fd, elf_buf, sizeof(elf_buf)) != sizeof(elf_buf)
+	if (readn(fd, elf_buf, sizeof(elf_buf)) != sizeof(elf_buf)
 	    || elf->e_magic != ELF_MAGIC) {
 		close(fd);
 		cprintf("elf magic %08x want %08x\n", elf->e_magic, ELF_MAGIC);
@@ -281,7 +281,7 @@ map_segment(envid_t child, uintptr_t va, size_t memsz,
 				return r;
 			if ((r = seek(fd, fileoffset + i)) < 0)
 				return r;
-			if ((r = read(fd, UTEMP, MIN(PGSIZE, filesz-i))) < 0)
+			if ((r = readn(fd, UTEMP, MIN(PGSIZE, filesz-i))) < 0)
 				return r;
 			if ((r = sys_page_map(0, UTEMP, child, (void*) (va + i), perm)) < 0)
 				panic("spawn: sys_page_map data: %e", r);
