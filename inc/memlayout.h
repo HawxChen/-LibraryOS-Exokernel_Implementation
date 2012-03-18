@@ -13,11 +13,11 @@
  */
 
 // Global descriptor numbers
-#define GD_KT     0x08		// kernel text
-#define GD_KD     0x10		// kernel data
-#define GD_UT     0x18		// user text
-#define GD_UD     0x20		// user data
-#define GD_TSS    0x28		// Task segment selector
+#define GD_KT     0x08          // kernel text
+#define GD_KD     0x10          // kernel data
+#define GD_UT     0x18          // user text
+#define GD_UD     0x20          // user data
+#define GD_TSS    0x28          // Task segment selector
 
 /*
  * Virtual memory map:                                Permissions
@@ -93,7 +93,7 @@
 // virtual address space into that 4 Meg region starting at VPT.
 #define VPT		(KERNBASE - PTSIZE)
 #define KSTACKTOP	VPT
-#define KSTKSIZE	(8*PGSIZE)	// size of a kernel stack
+#define KSTKSIZE	(8*PGSIZE)  // size of a kernel stack
 #define ULIM		(KSTACKTOP - PTSIZE)
 
 /*
@@ -151,8 +151,8 @@
 typedef uint32_t pte_t;
 typedef uint32_t pde_t;
 
-extern volatile pte_t vpt[];	// VA of "virtual page table"
-extern volatile pde_t vpd[];	// VA of current page directory
+extern volatile pte_t vpt[];    // VA of "virtual page table"
+extern volatile pde_t vpd[];    // VA of current page directory
 
 
 /*
@@ -172,14 +172,14 @@ LIST_ENTRY (Page)
 
      struct Page
      {
-	 Page_LIST_entry_t pp_link;	/* free list link */
+         Page_LIST_entry_t pp_link; /* free list link */
 
-	 // pp_ref is the count of pointers (usually in page table entries)
-	 // to this page, for pages allocated using page_alloc.
-	 // Pages allocated at boot time using pmap.c's
-	 // boot_alloc do not have valid reference count fields.
+         // pp_ref is the count of pointers (usually in page table entries)
+         // to this page, for pages allocated using page_alloc.
+         // Pages allocated at boot time using pmap.c's
+         // boot_alloc do not have valid reference count fields.
 
-	 uint16_t pp_ref;
+         uint16_t pp_ref;
      };
 
 #endif /* !__ASSEMBLER__ */

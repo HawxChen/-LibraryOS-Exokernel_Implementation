@@ -5,10 +5,10 @@
 
 #include <kern/kdebug.h>
 
-extern const struct Stab __STAB_BEGIN__[];	// Beginning of stabs table
-extern const struct Stab __STAB_END__[];	// End of stabs table
-extern const char __STABSTR_BEGIN__[];	// Beginning of string table
-extern const char __STABSTR_END__[];	// End of string table
+extern const struct Stab __STAB_BEGIN__[];  // Beginning of stabs table
+extern const struct Stab __STAB_END__[];    // End of stabs table
+extern const char __STABSTR_BEGIN__[];  // Beginning of string table
+extern const char __STABSTR_END__[];    // End of string table
 
 
 // stab_binsearch(stabs, region_left, region_right, type, addr)
@@ -49,54 +49,54 @@ extern const char __STABSTR_END__[];	// End of string table
 //
 static void
 stab_binsearch (const struct Stab *stabs, int *region_left, int *region_right,
-		int type, uintptr_t addr)
+                int type, uintptr_t addr)
 {
     int l = *region_left, r = *region_right, any_matches = 0;
 
     while (l <= r)
     {
-	int true_m = (l + r) / 2, m = true_m;
+        int true_m = (l + r) / 2, m = true_m;
 
-	// search for earliest stab with right type
-	while (m >= l && stabs[m].n_type != type)
-	    m--;
-	if (m < l)
-	{			// no match in [l, m]
-	    l = true_m + 1;
-	    continue;
-	}
+        // search for earliest stab with right type
+        while (m >= l && stabs[m].n_type != type)
+            m--;
+        if (m < l)
+        {                       // no match in [l, m]
+            l = true_m + 1;
+            continue;
+        }
 
-	// actual binary search
-	any_matches = 1;
-	if (stabs[m].n_value < addr)
-	{
-	    *region_left = m;
-	    l = true_m + 1;
-	}
-	else if (stabs[m].n_value > addr)
-	{
-	    *region_right = m - 1;
-	    r = m - 1;
-	}
-	else
-	{
-	    // exact match for 'addr', but continue loop to find
-	    // *region_right
-	    *region_left = m;
-	    l = m;
-	    addr++;
-	}
+        // actual binary search
+        any_matches = 1;
+        if (stabs[m].n_value < addr)
+        {
+            *region_left = m;
+            l = true_m + 1;
+        }
+        else if (stabs[m].n_value > addr)
+        {
+            *region_right = m - 1;
+            r = m - 1;
+        }
+        else
+        {
+            // exact match for 'addr', but continue loop to find
+            // *region_right
+            *region_left = m;
+            l = m;
+            addr++;
+        }
     }
 
     if (!any_matches)
-	*region_right = *region_left - 1;
+        *region_right = *region_left - 1;
     else
     {
-	// find rightmost region containing 'addr'
-	for (l = *region_right;
-	     l > *region_left && stabs[l].n_type != type; l--)
-	    /* do nothing */ ;
-	*region_left = l;
+        // find rightmost region containing 'addr'
+        for (l = *region_right;
+             l > *region_left && stabs[l].n_type != type; l--)
+            /* do nothing */ ;
+        *region_left = l;
     }
 }
 
@@ -126,20 +126,20 @@ debuginfo_eip (uintptr_t addr, struct Eipdebuginfo *info)
     // Find the relevant set of stabs
     if (addr >= ULIM)
     {
-	stabs = __STAB_BEGIN__;
-	stab_end = __STAB_END__;
-	stabstr = __STABSTR_BEGIN__;
-	stabstr_end = __STABSTR_END__;
+        stabs = __STAB_BEGIN__;
+        stab_end = __STAB_END__;
+        stabstr = __STABSTR_BEGIN__;
+        stabstr_end = __STABSTR_END__;
     }
     else
     {
-	// Can't search for user-level addresses yet!
-	panic ("User address");
+        // Can't search for user-level addresses yet!
+        panic ("User address");
     }
 
     // String table validity checks
     if (stabstr_end <= stabstr || stabstr_end[-1] != 0)
-	return -1;
+        return -1;
 
     // Now we find the right stabs that define the function containing
     // 'eip'.  First, we find the basic source file containing 'eip'.
@@ -151,7 +151,7 @@ debuginfo_eip (uintptr_t addr, struct Eipdebuginfo *info)
     rfile = (stab_end - stabs) - 1;
     stab_binsearch (stabs, &lfile, &rfile, N_SO, addr);
     if (lfile == 0)
-	return -1;
+        return -1;
 
     // Search within that file's stabs for the function definition
     // (N_FUN).
@@ -161,27 +161,27 @@ debuginfo_eip (uintptr_t addr, struct Eipdebuginfo *info)
 
     if (lfun <= rfun)
     {
-	// stabs[lfun] points to the function name
-	// in the string table, but check bounds just in case.
-	if (stabs[lfun].n_strx < stabstr_end - stabstr)
-	    info->eip_fn_name = stabstr + stabs[lfun].n_strx;
-	info->eip_fn_addr = stabs[lfun].n_value;
-	addr -= info->eip_fn_addr;
-	// Search within the function definition for the line number.
-	lline = lfun;
-	rline = rfun;
+        // stabs[lfun] points to the function name
+        // in the string table, but check bounds just in case.
+        if (stabs[lfun].n_strx < stabstr_end - stabstr)
+            info->eip_fn_name = stabstr + stabs[lfun].n_strx;
+        info->eip_fn_addr = stabs[lfun].n_value;
+        addr -= info->eip_fn_addr;
+        // Search within the function definition for the line number.
+        lline = lfun;
+        rline = rfun;
     }
     else
     {
-	// Couldn't find function stab!  Maybe we're in an assembly
-	// file.  Search the whole file for the line number.
-	info->eip_fn_addr = addr;
-	lline = lfile;
-	rline = rfile;
+        // Couldn't find function stab!  Maybe we're in an assembly
+        // file.  Search the whole file for the line number.
+        info->eip_fn_addr = addr;
+        lline = lfile;
+        rline = rfile;
     }
     // Ignore stuff after the colon.
     info->eip_fn_namelen =
-	strfind (info->eip_fn_name, ':') - info->eip_fn_name;
+        strfind (info->eip_fn_name, ':') - info->eip_fn_name;
 
 
     // Search within [lline, rline] for the line number stab.
@@ -201,19 +201,19 @@ debuginfo_eip (uintptr_t addr, struct Eipdebuginfo *info)
     // can interpolate code from a different file!
     // Such included source files use the N_SOL stab type.
     while (lline >= lfile
-	   && stabs[lline].n_type != N_SOL
-	   && (stabs[lline].n_type != N_SO || !stabs[lline].n_value))
-	lline--;
+           && stabs[lline].n_type != N_SOL
+           && (stabs[lline].n_type != N_SO || !stabs[lline].n_value))
+        lline--;
     if (lline >= lfile && stabs[lline].n_strx < stabstr_end - stabstr)
-	info->eip_file = stabstr + stabs[lline].n_strx;
+        info->eip_file = stabstr + stabs[lline].n_strx;
 
 
     // Set eip_fn_narg to the number of arguments taken by the function,
     // or 0 if there was no containing function.
     if (lfun < rfun)
-	for (lline = lfun + 1;
-	     lline < rfun && stabs[lline].n_type == N_PSYM; lline++)
-	    info->eip_fn_narg++;
+        for (lline = lfun + 1;
+             lline < rfun && stabs[lline].n_type == N_PSYM; lline++)
+            info->eip_fn_narg++;
 
     return 0;
 }

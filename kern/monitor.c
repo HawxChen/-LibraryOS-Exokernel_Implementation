@@ -11,7 +11,7 @@
 #include <kern/monitor.h>
 #include <kern/kdebug.h>
 
-#define CMDBUF_SIZE	80	// enough for one VGA text line
+#define CMDBUF_SIZE	80          // enough for one VGA text line
 
 
 struct Command
@@ -39,7 +39,7 @@ mon_help (int argc, char **argv, struct Trapframe *tf)
     int i;
 
     for (i = 0; i < NCOMMANDS; i++)
-	cprintf ("%s - %s\n", commands[i].name, commands[i].desc);
+        cprintf ("%s - %s\n", commands[i].name, commands[i].desc);
     return 0;
 }
 
@@ -54,7 +54,7 @@ mon_kerninfo (int argc, char **argv, struct Trapframe *tf)
     cprintf ("  edata  %08x (virt)  %08x (phys)\n", edata, edata - KERNBASE);
     cprintf ("  end    %08x (virt)  %08x (phys)\n", end, end - KERNBASE);
     cprintf ("Kernel executable memory footprint: %dKB\n",
-	     (end - entry + 1023) / 1024);
+             (end - entry + 1023) / 1024);
     return 0;
 }
 
@@ -84,31 +84,31 @@ runcmd (char *buf, struct Trapframe *tf)
     argv[argc] = 0;
     while (1)
     {
-	// gobble whitespace
-	while (*buf && strchr (WHITESPACE, *buf))
-	    *buf++ = 0;
-	if (*buf == 0)
-	    break;
+        // gobble whitespace
+        while (*buf && strchr (WHITESPACE, *buf))
+            *buf++ = 0;
+        if (*buf == 0)
+            break;
 
-	// save and scan past next arg
-	if (argc == MAXARGS - 1)
-	{
-	    cprintf ("Too many arguments (max %d)\n", MAXARGS);
-	    return 0;
-	}
-	argv[argc++] = buf;
-	while (*buf && !strchr (WHITESPACE, *buf))
-	    buf++;
+        // save and scan past next arg
+        if (argc == MAXARGS - 1)
+        {
+            cprintf ("Too many arguments (max %d)\n", MAXARGS);
+            return 0;
+        }
+        argv[argc++] = buf;
+        while (*buf && !strchr (WHITESPACE, *buf))
+            buf++;
     }
     argv[argc] = 0;
 
     // Lookup and invoke the command
     if (argc == 0)
-	return 0;
+        return 0;
     for (i = 0; i < NCOMMANDS; i++)
     {
-	if (strcmp (argv[0], commands[i].name) == 0)
-	    return commands[i].func (argc, argv, tf);
+        if (strcmp (argv[0], commands[i].name) == 0)
+            return commands[i].func (argc, argv, tf);
     }
     cprintf ("Unknown command '%s'\n", argv[0]);
     return 0;
@@ -125,10 +125,10 @@ monitor (struct Trapframe *tf)
 
     while (1)
     {
-	buf = readline ("K> ");
-	if (buf != NULL)
-	    if (runcmd (buf, tf) < 0)
-		break;
+        buf = readline ("K> ");
+        if (buf != NULL)
+            if (runcmd (buf, tf) < 0)
+                break;
     }
 }
 

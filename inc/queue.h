@@ -52,36 +52,36 @@
 struct Frob
 {
     int frobozz;
-     LIST_ENTRY (Frob) frob_link;	/* this contains the list element pointers */
+     LIST_ENTRY (Frob) frob_link;   /* this contains the list element pointers */
 };
 
-LIST_HEAD (Frob_list, Frob)	/* defines struct Frob_list as a list of Frob */
-     struct Frob_list flist;	/* declare a Frob list */
+LIST_HEAD (Frob_list, Frob)     /* defines struct Frob_list as a list of Frob */
+     struct Frob_list flist;    /* declare a Frob list */
 
-LIST_INIT (&flist);		/* clear flist (globals are cleared anyway) */
-flist = LIST_HEAD_INITIALIZER (&flist);	/* alternate way to clear flist */
+LIST_INIT (&flist);             /* clear flist (globals are cleared anyway) */
+flist = LIST_HEAD_INITIALIZER (&flist); /* alternate way to clear flist */
 
-if (LIST_EMPTY (&flist))	/* check whether list is empty */
+if (LIST_EMPTY (&flist))        /* check whether list is empty */
     printf ("list is empty\n");
 
      struct Frob *
-	 f = LIST_FIRST (&flist);	/* f is first element in list */
-f = LIST_NEXT (f, frob_link);	/* now f is next (second) element in list */
-f = LIST_NEXT (f, frob_link);	/* now f is next (third) element in list */
+         f = LIST_FIRST (&flist);   /* f is first element in list */
+f = LIST_NEXT (f, frob_link);   /* now f is next (second) element in list */
+f = LIST_NEXT (f, frob_link);   /* now f is next (third) element in list */
 
-for (f = LIST_FIRST (&flist); f != 0;	/* iterate over elements in flist */
+for (f = LIST_FIRST (&flist); f != 0;   /* iterate over elements in flist */
      f = LIST_NEXT (f, frob_link))
     printf ("f %d\n", f->frobozz);
 
-LIST_FOREACH (f, &flist, frob_link)	/* alternate way to say that */
+LIST_FOREACH (f, &flist, frob_link) /* alternate way to say that */
     printf ("f %d\n", f->frobozz);
 
-f = LIST_NEXT (LIST_FIRST (&flist));	/* f is second element in list */
-LIST_INSERT_AFTER (f, g, frob_link);	/* add g right after f in list */
-LIST_REMOVE (g, frob_link);	/* remove g from list (can't insert twice!) */
-LIST_INSERT_BEFORE (f, g, frob_link);	/* add g right before f */
-LIST_REMOVE (g, frob_link);	/* remove g again */
-LIST_INSERT_HEAD (&flist, g, frob_link);	/* add g as first element in list */
+f = LIST_NEXT (LIST_FIRST (&flist));    /* f is second element in list */
+LIST_INSERT_AFTER (f, g, frob_link);    /* add g right after f in list */
+LIST_REMOVE (g, frob_link);     /* remove g from list (can't insert twice!) */
+LIST_INSERT_BEFORE (f, g, frob_link);   /* add g right before f */
+LIST_REMOVE (g, frob_link);     /* remove g again */
+LIST_INSERT_HEAD (&flist, g, frob_link);    /* add g as first element in list */
 
 #endif
 

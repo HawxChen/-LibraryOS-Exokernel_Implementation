@@ -43,7 +43,7 @@ static __inline void write_eflags (uint32_t eflags)
 static __inline uint32_t read_ebp (void) __attribute__ ((always_inline));
 static __inline uint32_t read_esp (void) __attribute__ ((always_inline));
 static __inline void cpuid (uint32_t info, uint32_t * eaxp, uint32_t * ebxp,
-			    uint32_t * ecxp, uint32_t * edxp);
+                            uint32_t * ecxp, uint32_t * edxp);
 static __inline uint64_t read_tsc (void) __attribute__ ((always_inline));
 
 static __inline void
@@ -64,8 +64,8 @@ static __inline void
 insb (int port, void *addr, int cnt)
 {
     __asm __volatile ("cld\n\trepne\n\tinsb":"=D" (addr),
-		      "=c" (cnt):"d" (port), "0" (addr), "1" (cnt):"memory",
-		      "cc");
+                      "=c" (cnt):"d" (port), "0" (addr), "1" (cnt):"memory",
+                      "cc");
 }
 
 static __inline uint16_t
@@ -80,8 +80,8 @@ static __inline void
 insw (int port, void *addr, int cnt)
 {
     __asm __volatile ("cld\n\trepne\n\tinsw":"=D" (addr),
-		      "=c" (cnt):"d" (port), "0" (addr), "1" (cnt):"memory",
-		      "cc");
+                      "=c" (cnt):"d" (port), "0" (addr), "1" (cnt):"memory",
+                      "cc");
 }
 
 static __inline uint32_t
@@ -96,8 +96,8 @@ static __inline void
 insl (int port, void *addr, int cnt)
 {
     __asm __volatile ("cld\n\trepne\n\tinsl":"=D" (addr),
-		      "=c" (cnt):"d" (port), "0" (addr), "1" (cnt):"memory",
-		      "cc");
+                      "=c" (cnt):"d" (port), "0" (addr), "1" (cnt):"memory",
+                      "cc");
 }
 
 static __inline void
@@ -110,7 +110,7 @@ static __inline void
 outsb (int port, const void *addr, int cnt)
 {
     __asm __volatile ("cld\n\trepne\n\toutsb":"=S" (addr),
-		      "=c" (cnt):"d" (port), "0" (addr), "1" (cnt):"cc");
+                      "=c" (cnt):"d" (port), "0" (addr), "1" (cnt):"cc");
 }
 
 static __inline void
@@ -123,14 +123,14 @@ static __inline void
 outsw (int port, const void *addr, int cnt)
 {
     __asm __volatile ("cld\n\trepne\n\toutsw":"=S" (addr),
-		      "=c" (cnt):"d" (port), "0" (addr), "1" (cnt):"cc");
+                      "=c" (cnt):"d" (port), "0" (addr), "1" (cnt):"cc");
 }
 
 static __inline void
 outsl (int port, const void *addr, int cnt)
 {
     __asm __volatile ("cld\n\trepne\n\toutsl":"=S" (addr),
-		      "=c" (cnt):"d" (port), "0" (addr), "1" (cnt):"cc");
+                      "=c" (cnt):"d" (port), "0" (addr), "1" (cnt):"cc");
 }
 
 static __inline void
@@ -257,15 +257,15 @@ cpuid (uint32_t info, uint32_t * eaxp, uint32_t * ebxp, uint32_t * ecxp,
 {
     uint32_t eax, ebx, ecx, edx;
     asm volatile ("cpuid":"=a" (eax), "=b" (ebx), "=c" (ecx),
-		  "=d" (edx):"a" (info));
+                  "=d" (edx):"a" (info));
     if (eaxp)
-	*eaxp = eax;
+        *eaxp = eax;
     if (ebxp)
-	*ebxp = ebx;
+        *ebxp = ebx;
     if (ecxp)
-	*ecxp = ecx;
+        *ecxp = ecx;
     if (edxp)
-	*edxp = edx;
+        *edxp = edx;
 }
 
 static __inline uint64_t

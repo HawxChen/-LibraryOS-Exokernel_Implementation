@@ -13,9 +13,9 @@ test_backtrace (int x)
 {
     cprintf ("entering test_backtrace %d\n", x);
     if (x > 0)
-	test_backtrace (x - 1);
+        test_backtrace (x - 1);
     else
-	mon_backtrace (0, 0, 0);
+        mon_backtrace (0, 0, 0);
     cprintf ("leaving test_backtrace %d\n", x);
 }
 
@@ -40,7 +40,7 @@ i386_init (void)
 
     // Drop into the kernel monitor.
     while (1)
-	monitor (NULL);
+        monitor (NULL);
 }
 
 
@@ -60,7 +60,7 @@ _panic (const char *file, int line, const char *fmt, ...)
     va_list ap;
 
     if (panicstr)
-	goto dead;
+        goto dead;
     panicstr = fmt;
 
     // Be extra sure that the machine is in as reasonable state
@@ -75,7 +75,7 @@ _panic (const char *file, int line, const char *fmt, ...)
   dead:
     /* break into the kernel monitor */
     while (1)
-	monitor (NULL);
+        monitor (NULL);
 }
 
 /* like panic, but don't */
