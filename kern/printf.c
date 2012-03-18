@@ -7,31 +7,30 @@
 
 
 static void
-putch(int ch, int *cnt)
+putch (int ch, int *cnt)
 {
-	cputchar(ch);
-	*cnt++;
+    cputchar (ch);
+    *cnt++;
 }
 
 int
-vcprintf(const char *fmt, va_list ap)
+vcprintf (const char *fmt, va_list ap)
 {
-	int cnt = 0;
+    int cnt = 0;
 
-	vprintfmt((void*)putch, &cnt, fmt, ap);
-	return cnt;
+    vprintfmt ((void *) putch, &cnt, fmt, ap);
+    return cnt;
 }
 
 int
-cprintf(const char *fmt, ...)
+cprintf (const char *fmt, ...)
 {
-	va_list ap;
-	int cnt;
+    va_list ap;
+    int cnt;
 
-	va_start(ap, fmt);
-	cnt = vcprintf(fmt, ap);
-	va_end(ap);
+    va_start (ap, fmt);
+    cnt = vcprintf (fmt, ap);
+    va_end (ap);
 
-	return cnt;
+    return cnt;
 }
-
