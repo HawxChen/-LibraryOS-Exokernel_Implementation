@@ -95,18 +95,15 @@
  * User read-only mappings! Anything below here til UTOP are readonly to user.
  * They are global pages mapped in at env allocation time.
  */
-
 // User read-only virtual page table (see 'vpt' below)
 #define UVPT		(ULIM - PTSIZE)
 // Read-only copies of the Page structures
 #define UPAGES		(UVPT - PTSIZE)
 // Read-only copies of the global env structures
 #define UENVS		(UPAGES - PTSIZE)
-
 /*
  * Top of user VM. User can manipulate VA from UTOP-1 and down!
  */
-
 // Top of user-accessible VM
 #define UTOP		UENVS
 // Top of one-page user exception stack
@@ -114,10 +111,8 @@
 // Next page left invalid to guard against exception stack overflow; then:
 // Top of normal user stack
 #define USTACKTOP	(UTOP - 2*PGSIZE)
-
 // Where user programs generally begin
 #define UTEXT		(2*PTSIZE)
-
 // Used for temporary page mappings.  Typed 'void*' for convenience
 #define UTEMP		((void*) PTSIZE)
 // Used for temporary page mappings for the user page-fault handler
@@ -125,10 +120,7 @@
 #define PFTEMP		(UTEMP + PTSIZE - PGSIZE)
 // The location of the user-level STABS data structure
 #define USTABDATA	(PTSIZE / 2)
-
-
 #ifndef __ASSEMBLER__
-
 typedef uint32_t pte_t;
 typedef uint32_t pde_t;
 
@@ -147,6 +139,7 @@ typedef uint32_t pde_t;
  * will always be available at virtual address (VPT + (VPT >> PGSHIFT)), to
  * which vpd is set in entry.S.
  */
+<<<<<<< HEAD
 extern volatile pte_t vpt[];     // VA of "virtual page table"
 extern volatile pde_t vpd[];     // VA of current page directory
 #endif
@@ -172,6 +165,5 @@ struct Page {
 
 	uint16_t pp_ref;
 };
-
 #endif /* !__ASSEMBLER__ */
 #endif /* !JOS_INC_MEMLAYOUT_H */
