@@ -29,6 +29,11 @@ nvram_read (int r)
     return mc146818_read (r) | (mc146818_read (r + 1) << 8);
 }
 
+/*
+ *Hawx: descide the value of npages.
+ *                           npages_basemem
+ *                           npages_extmem
+ */
 static void
 i386_detect_memory (void)
 {
@@ -88,6 +93,10 @@ boot_alloc (uint32_t n)
     // which points to the end of the kernel's bss segment:
     // the first virtual address that the linker did *not* assign
     // to any kernel code or global variables.
+
+    /*
+     *Hawx: .bss is the section to store the uninitialized global data.
+     */
     if (!nextfree)
     {
         extern char end[];
@@ -98,6 +107,7 @@ boot_alloc (uint32_t n)
     // nextfree.  Make sure nextfree is kept aligned
     // to a multiple of PGSIZE.
     //
+
     // LAB 2: Your code here.
 
     return NULL;
@@ -143,6 +153,7 @@ mem_init (void)
     // The kernel uses this array to keep track of physical pages: for
     // each physical page, there is a corresponding struct Page in this
     // array.  'npages' is the number of physical pages in memory.
+
     // Your code goes here:
 
 
@@ -167,6 +178,7 @@ mem_init (void)
     //    - the new image at UPAGES -- kernel R, user R
     //      (ie. perm = PTE_U | PTE_P)
     //    - pages itself -- kernel RW, user NONE
+
     // Your code goes here:
 
     //////////////////////////////////////////////////////////////////////
@@ -179,6 +191,7 @@ mem_init (void)
     //       the kernel overflows its stack, it will fault rather than
     //       overwrite memory.  Known as a "guard page".
     //     Permissions: kernel RW, user NONE
+
     // Your code goes here:
 
     //////////////////////////////////////////////////////////////////////
@@ -235,6 +248,8 @@ page_init (void)
     //  1) Mark physical page 0 as in use.
     //     This way we preserve the real-mode IDT and BIOS structures
     //     in case we ever need them.  (Currently we don't, but...)
+    //Hawx: The following labs we will need them.  
+
     //  2) The rest of base memory, [PGSIZE, npages_basemem * PGSIZE)
     //     is free.
     //  3) Then comes the IO hole [IOPHYSMEM, EXTPHYSMEM), which must
@@ -243,7 +258,9 @@ page_init (void)
     //     Some of it is in use, some is free. Where is the kernel
     //     in physical memory?  Which pages are already in use for
     //     page tables and other data structures?
-    //
+    //Hawx: Notice the allocation of part for IO part memory
+    
+    //My Code is at here:
     // Change the code to reflect this.
     // NB: DO NOT actually touch the physical memory corresponding to
     // free pages!

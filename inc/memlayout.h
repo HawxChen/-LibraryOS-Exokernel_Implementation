@@ -87,6 +87,11 @@
 #define EXTPHYSMEM	0x100000
 
 // Kernel stack.
+/*
+ *Hawx: KSTACKTOP is 0xF0000000 - 0x400000, 0xEFC00000.
+ *      KSTSIZE   is 8*(2^12), 2^15. 0x10000.
+ *      ULIM      is 0xEFC00000 - 0x400000, 0xEF800000.
+ */
 #define KSTACKTOP	(KERNBASE - PTSIZE)
 #define KSTKSIZE	(8*PGSIZE)   		// size of a kernel stack
 #define ULIM		(KSTACKTOP - PTSIZE) 
@@ -96,6 +101,11 @@
  * They are global pages mapped in at env allocation time.
  */
 // User read-only virtual page table (see 'vpt' below)
+/*
+ *Hawx: UVPT is     0xEF400000
+ *      UPAGES is   0xEF000000
+ *      UENVS  is   0xEEC00000, UTOP, UXSTACKTOP, too.
+ */
 #define UVPT		(ULIM - PTSIZE)
 // Read-only copies of the Page structures
 #define UPAGES		(UVPT - PTSIZE)

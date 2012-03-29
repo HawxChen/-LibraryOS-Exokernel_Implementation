@@ -52,6 +52,9 @@ typedef int32_t off_t;
 	__a >= __b ? __a : __b;					\
 })
 
+/*
+ * Hawx: Return the address for head of the page
+ */
 // Rounding operations (efficient when n is a power of 2)
 // Round down to the nearest multiple of n
 #define ROUNDDOWN(a, n)						\
@@ -59,6 +62,9 @@ typedef int32_t off_t;
 	uint32_t __a = (uint32_t) (a);				\
 	(typeof(a)) (__a - __a % (n));				\
 })
+/*
+ * Hawx: Return the address for tail of the page
+ */
 // Round up to the nearest multiple of n
 #define ROUNDUP(a, n)						\
 ({								\

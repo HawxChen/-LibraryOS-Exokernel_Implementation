@@ -43,6 +43,9 @@
 #define NPTENTRIES	1024        // page table entries per page table
 #define PGSIZE		4096        // bytes mapped by a page
 #define PGSHIFT		12          // log2(PGSIZE)
+/*
+ * Hawx: PTSIZE is 2^22, 0x400000.
+ */
 #define PTSIZE		(PGSIZE*NPTENTRIES) // bytes mapped by a page directory entry
 #define PTSHIFT		22          // log2(PTSIZE)
 #define PTXSHIFT	12          // offset of PTX in a linear address
