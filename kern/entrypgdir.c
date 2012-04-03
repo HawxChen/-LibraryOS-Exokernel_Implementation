@@ -30,10 +30,10 @@ __attribute__ ((__aligned__ (PGSIZE)))
          // Map VA's [KERNBASE, KERNBASE+4MB) to PA's [0, 4MB)
          [KERNBASE >> PDXSHIFT]
              = ((uintptr_t) entry_pgtable - KERNBASE) + PTE_P + PTE_W
-         /*
-          * Hawx:  ((uintptr_t) entry_pgtable - KERNBASE))) \
-          * >> map it to physical address for pgtable's address and its 1st entry, too.
-          */
+             /*
+              * Hawx:  ((uintptr_t) entry_pgtable - KERNBASE))) \
+              * >> map it to physical address for pgtable's address and its 1st entry, too.
+              */
      };
 
 // Entry 0 of the page table maps to physical page 0, entry 1 to
@@ -1063,5 +1063,5 @@ __attribute__ ((__aligned__ (PGSIZE)))
          0x3fc000 | PTE_P | PTE_W,
          0x3fd000 | PTE_P | PTE_W,
          0x3fe000 | PTE_P | PTE_W,
-         0x3ff000 | PTE_P | PTE_W, /*Hawx: 0x3ff = 0x0011 1111 1111*/
+         0x3ff000 | PTE_P | PTE_W,  /*Hawx: 0x3ff = 0x0011 1111 1111 */
      };

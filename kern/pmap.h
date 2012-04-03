@@ -24,6 +24,9 @@ extern pde_t *kern_pgdir;
  */
 #define PADDR(kva) _paddr(__FILE__, __LINE__, kva)
 
+/*
+ * Hawx: Turn Virtual to Physical.
+ */
 static inline physaddr_t
 _paddr (const char *file, int line, void *kva)
 {
@@ -34,6 +37,10 @@ _paddr (const char *file, int line, void *kva)
 
 /* This macro takes a physical address and returns the corresponding kernel
  * virtual address.  It panics if you pass an invalid physical address. */
+
+/*
+ * Hawx: Turn Physical to Virtual.
+ */
 #define KADDR(pa) _kaddr(__FILE__, __LINE__, pa)
 
 static inline void *
@@ -81,6 +88,12 @@ static inline void *
 page2kva (struct Page *pp)
 {
     return KADDR (page2pa (pp));
+}
+
+static inline void *
+kva2page (void *kva)
+{
+    return &pages[PGNUM ((PADDR (kva)))];
 }
 
 pte_t *pgdir_walk (pde_t * pgdir, const void *va, int create);

@@ -27,6 +27,7 @@
 // use PGADDR(PDX(la), PTX(la), PGOFF(la)).
 
 // page number field of address
+//Hawx: la is physical address.
 #define PGNUM(la)	(((uintptr_t) (la)) >> PTXSHIFT)
 
 // page directory index
@@ -131,7 +132,7 @@
 #else // not __ASSEMBLER__
 #include <inc/types.h>
 // Segment Descriptors
-    struct Segdesc
+struct Segdesc
 {
     unsigned sd_lim_15_0:16;    // Low bits of segment limit
     unsigned sd_base_15_0:16;   // Low bits of segment base address

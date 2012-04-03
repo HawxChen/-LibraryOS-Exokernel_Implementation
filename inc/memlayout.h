@@ -84,7 +84,7 @@
 // IOPHYSMEM can be addressed at KERNBASE + IOPHYSMEM.  The hole ends
 // at physical address EXTPHYSMEM.
 #define IOPHYSMEM	0x0A0000
-#define EXTPHYSMEM	0x100000
+#define EXTPHYSMEM	0x100000    //1MB
 
 // Kernel stack.
 /*
@@ -93,8 +93,8 @@
  *      ULIM      is 0xEFC00000 - 0x400000, 0xEF800000.
  */
 #define KSTACKTOP	(KERNBASE - PTSIZE)
-#define KSTKSIZE	(8*PGSIZE)   		// size of a kernel stack
-#define ULIM		(KSTACKTOP - PTSIZE) 
+#define KSTKSIZE	(8*PGSIZE)  // size of a kernel stack
+#define ULIM		(KSTACKTOP - PTSIZE)
 
 /*
  * User read-only mappings! Anything below here til UTOP are readonly to user.
@@ -107,26 +107,37 @@
  *      UENVS  is   0xEEC00000, UTOP, UXSTACKTOP, too.
  */
 #define UVPT		(ULIM - PTSIZE)
+
 // Read-only copies of the Page structures
 #define UPAGES		(UVPT - PTSIZE)
+
 // Read-only copies of the global env structures
 #define UENVS		(UPAGES - PTSIZE)
+
 /*
  * Top of user VM. User can manipulate VA from UTOP-1 and down!
  */
 // Top of user-accessible VM
 #define UTOP		UENVS
+
 // Top of one-page user exception stack
 #define UXSTACKTOP	UTOP
+
 // Next page left invalid to guard against exception stack overflow; then:
 // Top of normal user stack
 #define USTACKTOP	(UTOP - 2*PGSIZE)
+
 // Where user programs generally begin
 #define UTEXT		(2*PTSIZE)
+
 // Used for temporary page mappings.  Typed 'void*' for convenience
 #define UTEMP		((void*) PTSIZE)
+
 // Used for temporary page mappings for the user page-fault handler
 // (should not conflict with other temporary page mappings)
+/*
+   Hawx: PFTEMP is ((void*) PTSIZE) - 0x400000 - 0x1000 = 0x7FF000
+ */
 #define PFTEMP		(UTEMP + PTSIZE - PGSIZE)
 // The location of the user-level STABS data structure
 #define USTABDATA	(PTSIZE / 2)
@@ -149,9 +160,12 @@ typedef uint32_t pde_t;
  * will always be available at virtual address (VPT + (VPT >> PGSHIFT)), to
  * which vpd is set in entry.S.
  */
-<<<<<<< HEAD
-extern volatile pte_t vpt[];     // VA of "virtual page table"
-extern volatile pde_t vpd[];     // VA of current page directory
+/*
+    (VPT + (VPT >> PGSHIFT)) is the relative index to the Page Directory 
+    
+ */
+extern volatile pte_t vpt[];    // VA of "virtual page table"
+extern volatile pde_t vpd[];    // VA of current page directory
 #endif
 
 /*
@@ -164,16 +178,18 @@ extern volatile pde_t vpd[];     // VA of current page directory
  * You can map a Page * to the corresponding physical address
  * with page2pa() in kern/pmap.h.
  */
-struct Page {
-	// Next page on the free list.
-	struct Page *pp_link;
+struct Page
+{
+    // Next page on the free list.
+    struct Page *pp_link;
+    uint32_t paddr;
 
-	// pp_ref is the count of pointers (usually in page table entries)
-	// to this page, for pages allocated using page_alloc.
-	// Pages allocated at boot time using pmap.c's
-	// boot_alloc do not have valid reference count fields.
+    // pp_ref is the count of pointers (usually in page table entries)
+    // to this page, for pages allocated using page_alloc.
+    // Pages allocated at boot time using pmap.c's
+    // boot_alloc do not have valid reference count fields.
 
-	uint16_t pp_ref;
+    uint16_t pp_ref;
 };
 #endif /* !__ASSEMBLER__ */
 #endif /* !JOS_INC_MEMLAYOUT_H */
