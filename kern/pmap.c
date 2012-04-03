@@ -38,7 +38,7 @@ nvram_read (int r)
  *                           npages_basemem
  *                           npages_extmem
  */
-void
+static void
 i386_detect_memory (void)
 {
     size_t npages_extmem;
@@ -86,7 +86,7 @@ static void boot_map_region (pde_t * pgdir, uintptr_t va, size_t size,
 // If we're out of memory, boot_alloc should panic.
 // This function may ONLY be used during initialization,
 // before the page_free_list list has been set up.
-void *
+static void *
 boot_alloc (uint32_t n)
 {
     static char *nextfree;      // virtual address of next byte of free memory
@@ -190,7 +190,8 @@ mem_init (void)
     // Permissions: kernel R, user R
 
     /*Hawx:
-     * Set PDE's PDX(UVPT) index' entry's value to kern_pgdir's 'physical addr .
+     * Set PDE's PDX(UVPT) index' entry's value to kern_pgdir's 'physical addr.
+     * This PDE manages 4MB memory space
      */
     kern_pgdir[PDX (UVPT)] = PADDR (kern_pgdir) | PTE_U | PTE_P;
 
@@ -756,7 +757,9 @@ check_kern_pgdir (void)
 
 // This function returns the physical address of the page containing 'va',
 // defined by the page directory 'pgdir'.  The hardware normally performs
-// this functionality for us!  We define our own version to help check
+// this functionality for us!
+
+// We define our own version to help check
 // the check_kern_pgdir() function; it shouldn't be used elsewhere.
 
 static physaddr_t
@@ -764,12 +767,19 @@ check_va2pa (pde_t * pgdir, uintptr_t va)
 {
     pte_t *p;
 
+    //Hawx: Get the PDE.
+    //      And Confirm it to be present.
     pgdir = &pgdir[PDX (va)];
     if (!(*pgdir & PTE_P))
         return ~0;
+
+    //Hawx: Get the PTE
+    //      And Confirm it to be present.
     p = (pte_t *) KADDR (PTE_ADDR (*pgdir));
     if (!(p[PTX (va)] & PTE_P))
         return ~0;
+
+    //Hawx: Return the page's start address corresponding to va.
     return PTE_ADDR (p[PTX (va)]);
 }
 
@@ -809,36 +819,44 @@ check_page (void)
     assert (page_insert (kern_pgdir, pp1, 0x0, PTE_W) < 0);
 
     // free pp0 and try again: pp0 should be used for page table
-    page_free (pp0);
-    assert (page_insert (kern_pgdir, pp1, 0x0, PTE_W) == 0);
-    assert (PTE_ADDR (kern_pgdir[0]) == page2pa (pp0));
-    assert (check_va2pa (kern_pgdir, 0x0) == page2pa (pp1));
+    //Hawx: map pp1 to 0x0, and use pp0 as the PDE, page table.
+    page_free (pp0); //Hawx: page_free has no effect to substract ref-count.
+    assert (page_insert (kern_pgdir, pp1, 0x0, PTE_W) == 0);//use pp0 as the PDE to map pp1 to pp0(PDE)'s PTE
+    assert (PTE_ADDR (kern_pgdir[0]) == page2pa (pp0)); //Hawx: kern_pgdir[0] should use the same phy-addr as pp0.
+    assert (check_va2pa (kern_pgdir, 0x0) == page2pa (pp1)); //Hawx: pp1's phy-addr is the same as page for va(0x0)
+                                                             //Assign page frame to the right PTE through PDE.
     assert (pp1->pp_ref == 1);
     assert (pp0->pp_ref == 1);
 
     // should be able to map pp2 at PGSIZE because pp0 is already allocated for page table
+    //Hawx pp0 is the PDE, which manage 4MB memory space.
+    //Hawx: map pp2 to PGSIZE.
     assert (page_insert (kern_pgdir, pp2, (void *) PGSIZE, PTE_W) == 0);
-    assert (check_va2pa (kern_pgdir, PGSIZE) == page2pa (pp2));
+    assert (check_va2pa (kern_pgdir, PGSIZE) == page2pa (pp2));//Assign page frame to the right PTE through PDE.
     assert (pp2->pp_ref == 1);
 
     // should be no free memory
     assert (!page_alloc (0));
 
     // should be able to map pp2 at PGSIZE because it's already there
+    // Hawx: Insert the page already inserted. This count shouldn't be increated.
     assert (page_insert (kern_pgdir, pp2, (void *) PGSIZE, PTE_W) == 0);
     assert (check_va2pa (kern_pgdir, PGSIZE) == page2pa (pp2));
     assert (pp2->pp_ref == 1);
 
     // pp2 should NOT be on the free list
     // could happen in ref counts are handled sloppily in page_insert
+    // Hawx: It doesn't support available pages now.
     assert (!page_alloc (0));
 
     // check that pgdir_walk returns a pointer to the pte
-    ptep = (pte_t *) KADDR (PTE_ADDR (kern_pgdir[PDX (PGSIZE)]));
+    //Hawx: Check both ways to access the page phy-addr is the same.
+    ptep = (pte_t *) KADDR (PTE_ADDR (kern_pgdir[PDX (PGSIZE)]));//Hawx: Get the PDE's address, page table's address.
     assert (pgdir_walk (kern_pgdir, (void *) PGSIZE, 0) ==
             ptep + PTX (PGSIZE));
 
     // should be able to change permissions too.
+    //Hawx: It could change permissions for the inserted page by inserting it.
     assert (page_insert (kern_pgdir, pp2, (void *) PGSIZE, PTE_W | PTE_U) ==
             0);
     assert (check_va2pa (kern_pgdir, PGSIZE) == page2pa (pp2));
@@ -847,13 +865,20 @@ check_page (void)
     assert (kern_pgdir[0] & PTE_U);
 
     // should not be able to map at PTSIZE because need free page for page table
+    // Hawx: pp0 is the PDE, page table, currently.
+    //       How did page_insert prevent to re-allocate pp0...?
     assert (page_insert (kern_pgdir, pp0, (void *) PTSIZE, PTE_W) < 0);
 
     // insert pp1 at PGSIZE (replacing pp2)
+    // Hawx: map pp1 to PGSIZE, and replace pp2.
+    //       pp2 is current freed.
     assert (page_insert (kern_pgdir, pp1, (void *) PGSIZE, PTE_W) == 0);
     assert (!(*pgdir_walk (kern_pgdir, (void *) PGSIZE, 0) & PTE_U));
 
     // should have pp1 at both 0 and PGSIZE, pp2 nowhere, ...
+    //Hawx: Check current map:
+    //                        pp1 to 0x0
+    //                        pp1 to PGSIZE
     assert (check_va2pa (kern_pgdir, 0) == page2pa (pp1));
     assert (check_va2pa (kern_pgdir, PGSIZE) == page2pa (pp1));
     // ... and ref counts should reflect this
@@ -861,9 +886,12 @@ check_page (void)
     assert (pp2->pp_ref == 0);
 
     // pp2 should be returned by page_alloc
+    // Hawx: pp2 is just freed, so when we use allocation, then we get the pp2-phy-addr. 
     assert ((pp = page_alloc (0)) && pp == pp2);
 
     // unmapping pp1 at 0 should keep pp1 at PGSIZE
+    // Hawx: Free pp1 at 0x0. 
+    //       Current map: pp1 at PGSIZE.
     page_remove (kern_pgdir, 0x0);
     assert (check_va2pa (kern_pgdir, 0x0) == ~0);
     assert (check_va2pa (kern_pgdir, PGSIZE) == page2pa (pp1));
@@ -871,6 +899,8 @@ check_page (void)
     assert (pp2->pp_ref == 0);
 
     // unmapping pp1 at PGSIZE should free it
+    // Hawx: Free pp1 at PGSIZE. 
+    //       Current map: NONE.
     page_remove (kern_pgdir, (void *) PGSIZE);
     assert (check_va2pa (kern_pgdir, 0x0) == ~0);
     assert (check_va2pa (kern_pgdir, PGSIZE) == ~0);
@@ -878,6 +908,7 @@ check_page (void)
     assert (pp2->pp_ref == 0);
 
     // so it should be returned by page_alloc
+    // Hawx: pp1 is just freed, so when we use allocation, then we get the pp1-phy-addr. 
     assert ((pp = page_alloc (0)) && pp == pp1);
 
     // should be no free memory
@@ -891,6 +922,7 @@ check_page (void)
 
     // check pointer arithmetic in pgdir_walk
     page_free (pp0);
+    //Hawx: va <- 4MB+4KB
     va = (void *) (PGSIZE * NPDENTRIES + PGSIZE);
     ptep = pgdir_walk (kern_pgdir, va, 1);
     ptep1 = (pte_t *) KADDR (PTE_ADDR (kern_pgdir[PDX (va)]));
