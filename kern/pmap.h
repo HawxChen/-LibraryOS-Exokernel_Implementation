@@ -18,6 +18,14 @@ extern size_t npages;
 
 extern pde_t *kern_pgdir;
 
+/*Hawx:
+   For Page Directory's self page.
+ */
+#define INC_PGP(__pgdir) (pa2page(PADDR(__pgdir)))->pp_ref++;
+#define DEC_PGP(__pgdir) (pa2page(PADDR(__pgdir)))->pp_ref--;
+/*
+   For Page Directory Entry's page.
+ */
 
 /* This macro takes a kernel virtual address -- an address that points above
  * KERNBASE, where the machine's maximum 256MB of physical memory is mapped --
