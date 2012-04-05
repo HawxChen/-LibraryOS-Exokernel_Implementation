@@ -328,6 +328,7 @@ page_init (void)
     {
         pages[i - 1].pp_ref = 0;
         pages[i - 1].pp_link = &pages[i];
+        //Hawx: paddr is the memory mapped & managed by this page.
         pages[i - 1].paddr = page2pa (&pages[i - 1]);
     }
     pages[npages - 1].pp_ref = 0;
@@ -390,7 +391,12 @@ page_alloc (int alloc_flags)
 
     if (ALLOC_ZERO & alloc_flags)
     {
+        //The page is already mapped by MMU.
+        //It has the same result if here doesn't use KADDR(). But it needs to set following lines.
+        // Map VA's [0, 4MB) to PA's [0, 4MB)
+        //[0] = ((uintptr_t) entry_pgtable - KERNBASE) + PTE_P + PTE_W,
         memset ((void *) KADDR (ret_page->paddr), '\0', PGSIZE);
+        //memset ((void *)  (ret_page->paddr), '\0', PGSIZE);
     }
     return ret_page;
 }
@@ -449,7 +455,50 @@ page_decref (struct Page *pp)
 pte_t *
 pgdir_walk (pde_t * pgdir, const void *va, int create)
 {
-    // Fill this function in
+
+    physaddr_t pa = 0;
+    struct Page *pde_pg;
+    do
+    {
+        if (PTE_P & pgdir[PDX (va)])
+        {
+            pde_pg = pa2page (pgdir[PDX (va)]);
+        }
+        else
+        {
+            //PDE doesn't exist.
+            if (NO_CREATE == create)
+            {
+                cprintf ("PTE doesn't exist and NO_CREATE\n");
+                break;
+            }
+            if (NIL == (pde_pg = page_alloc (ALLOC_ZERO)))
+            {
+                cprintf ("PTE doesn't exist and page_alloc failed\n");
+                break;
+            }
+            pde_pg->pp_ref++;
+            pgdir[PDX (va)] = pde_pg->paddr | PTE_P;
+        }
+
+        //PDE exist now.
+        /*Why
+           (gdb)
+           0xf0100e17 <page_insert+36>:    test   %eax,%eax
+           546         if(NIL == ptep)
+           (gdb) p ptep
+           $1 = (pte_t *) 0x1000
+           (gdb) p *ptep
+           $2 = <error type>
+           (gdb) x/w ptep
+           0x1000: 0x00000000
+         */
+//        return ((( (pde_pg->paddr)) + PTX (va)));
+        return ((pte_t *) KADDR (pde_pg->paddr)) + PTX (va);
+    }
+    while (FALSE);
+
+
     return NULL;
 }
 
@@ -497,8 +546,45 @@ boot_map_region (pde_t * pgdir, uintptr_t va, size_t size, physaddr_t pa,
 int
 page_insert (pde_t * pgdir, struct Page *pp, void *va, int perm)
 {
-    // Fill this function in
+    //Pointer assign imply KADDR();
+    pte_t *ptep = NIL;
+
+    /*Page table
+       ----------
+       |ptep|pte|
+       ----------
+     */
+    /*
+     * *ptep is the memory with permission defined by its permission field.
+     * The pointer address return by pgdir_walk is the VA now.
+     */
+    ptep = pgdir_walk (pgdir, va, CREATE);
+    pgdir[PDX (va)] |= perm;
+
+    if (NIL == ptep)
+    {
+        cprintf ("ptep is NULL\n");
+        return -E_NO_MEM;
+    }
+
+    if (NIL == pp)
+    {
+        return -E_UNSPECIFIED;
+    }
+
+    //map it!
+    if ((pp->paddr != PTE_ADDR (*ptep)) && (*ptep & PTE_P))
+    {
+        page_remove (pgdir, va);
+    }
+    if ((pp->paddr != PTE_ADDR (*ptep)))
+        pp->pp_ref++;
+
+    *ptep = (page2pa (pp)) | perm | PTE_P;
+
+
     return 0;
+
 }
 
 //
@@ -515,8 +601,24 @@ page_insert (pde_t * pgdir, struct Page *pp, void *va, int perm)
 struct Page *
 page_lookup (pde_t * pgdir, void *va, pte_t ** pte_store)
 {
-    // Fill this function in
-    return NULL;
+    *pte_store = pgdir_walk (pgdir, va, NO_CREATE);
+
+
+    // Hawx:
+    // Coincidence: It could also use the following 2 lines.
+    //              Because when page is used, the PTE_P must be set, It will cause pte not to be 0x0.
+    // Correct meaning: Unavailable index.
+
+    if (NIL == *pte_store)
+        return NIL;
+
+    if (!((**pte_store) & PTE_P))
+    {
+        cprintf ("The page looked up is not present\n");
+        return NIL;
+    }
+
+    return pa2page (PTE_ADDR (**pte_store));
 }
 
 //
@@ -537,7 +639,20 @@ page_lookup (pde_t * pgdir, void *va, pte_t ** pte_store)
 void
 page_remove (pde_t * pgdir, void *va)
 {
-    // Fill this function in
+    struct Page *rm_page = NIL;
+    pte_t *rm_pte;
+    if (NIL == (rm_page = page_lookup (pgdir, va, &rm_pte)))
+    {
+        return;
+    }
+
+    page_decref (rm_page);
+    if (!rm_page->pp_ref)
+    {
+        tlb_invalidate (pgdir, va);
+        *rm_pte = 0;
+    }
+
 }
 
 //
@@ -820,11 +935,12 @@ check_page (void)
 
     // free pp0 and try again: pp0 should be used for page table
     //Hawx: map pp1 to 0x0, and use pp0 as the PDE, page table.
-    page_free (pp0); //Hawx: page_free has no effect to substract ref-count.
-    assert (page_insert (kern_pgdir, pp1, 0x0, PTE_W) == 0);//use pp0 as the PDE to map pp1 to pp0(PDE)'s PTE
+    page_free (pp0);            //Hawx: page_free has no effect to substract ref-count.
+    assert (page_insert (kern_pgdir, pp1, 0x0, PTE_W) == 0);    //use pp0 as the PDE to map pp1 to pp0(PDE)'s PTE
     assert (PTE_ADDR (kern_pgdir[0]) == page2pa (pp0)); //Hawx: kern_pgdir[0] should use the same phy-addr as pp0.
-    assert (check_va2pa (kern_pgdir, 0x0) == page2pa (pp1)); //Hawx: pp1's phy-addr is the same as page for va(0x0)
-                                                             //Assign page frame to the right PTE through PDE.
+    assert (check_va2pa (kern_pgdir, 0x0) == page2pa (pp1));    //Hawx: pp1's phy-addr is the same as page for va(0x0)
+
+    //Assign page frame to the right PTE through PDE.
     assert (pp1->pp_ref == 1);
     assert (pp0->pp_ref == 1);
 
@@ -832,7 +948,7 @@ check_page (void)
     //Hawx pp0 is the PDE, which manage 4MB memory space.
     //Hawx: map pp2 to PGSIZE.
     assert (page_insert (kern_pgdir, pp2, (void *) PGSIZE, PTE_W) == 0);
-    assert (check_va2pa (kern_pgdir, PGSIZE) == page2pa (pp2));//Assign page frame to the right PTE through PDE.
+    assert (check_va2pa (kern_pgdir, PGSIZE) == page2pa (pp2)); //Assign page frame to the right PTE through PDE.
     assert (pp2->pp_ref == 1);
 
     // should be no free memory
@@ -851,7 +967,7 @@ check_page (void)
 
     // check that pgdir_walk returns a pointer to the pte
     //Hawx: Check both ways to access the page phy-addr is the same.
-    ptep = (pte_t *) KADDR (PTE_ADDR (kern_pgdir[PDX (PGSIZE)]));//Hawx: Get the PDE's address, page table's address.
+    ptep = (pte_t *) KADDR (PTE_ADDR (kern_pgdir[PDX (PGSIZE)]));   //Hawx: Get the PDE's address, page table's address.
     assert (pgdir_walk (kern_pgdir, (void *) PGSIZE, 0) ==
             ptep + PTX (PGSIZE));
 
@@ -862,6 +978,7 @@ check_page (void)
     assert (check_va2pa (kern_pgdir, PGSIZE) == page2pa (pp2));
     assert (pp2->pp_ref == 1);
     assert (*pgdir_walk (kern_pgdir, (void *) PGSIZE, 0) & PTE_U);
+    //Hawx: work at here.1
     assert (kern_pgdir[0] & PTE_U);
 
     // should not be able to map at PTSIZE because need free page for page table
@@ -893,6 +1010,7 @@ check_page (void)
     // Hawx: Free pp1 at 0x0. 
     //       Current map: pp1 at PGSIZE.
     page_remove (kern_pgdir, 0x0);
+    //Hawx: work at here.2
     assert (check_va2pa (kern_pgdir, 0x0) == ~0);
     assert (check_va2pa (kern_pgdir, PGSIZE) == page2pa (pp1));
     assert (pp1->pp_ref == 1);

@@ -5,6 +5,8 @@
 #define NULL ((void*) 0)
 #endif
 
+#define FALSE (0)
+#define TRUE (1)
 #define NIL NULL
 // Represents true-or-false values
 typedef int bool;

@@ -182,7 +182,7 @@ struct Page
 {
     // Next page on the free list.
     struct Page *pp_link;
-    uint32_t paddr;
+    uint32_t paddr;             //Hawx: The memory mapped and managed by this page.
 
     // pp_ref is the count of pointers (usually in page table entries)
     // to this page, for pages allocated using page_alloc.

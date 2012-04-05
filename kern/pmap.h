@@ -9,6 +9,8 @@
 #include <inc/memlayout.h>
 #include <inc/assert.h>
 
+#define CREATE TRUE
+#define NO_CREATE FALSE
 extern char bootstacktop[], bootstack[];
 
 extern struct Page *pages;
@@ -22,11 +24,11 @@ extern pde_t *kern_pgdir;
  * and returns the corresponding physical address.  It panics if you pass it a
  * non-kernel virtual address.
  */
-#define PADDR(kva) _paddr(__FILE__, __LINE__, kva)
-
 /*
  * Hawx: Turn Virtual to Physical.
  */
+#define PADDR(kva) _paddr(__FILE__, __LINE__, kva)
+
 static inline physaddr_t
 _paddr (const char *file, int line, void *kva)
 {
