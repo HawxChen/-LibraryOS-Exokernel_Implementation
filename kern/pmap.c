@@ -9,6 +9,12 @@
 #include <kern/pmap.h>
 #include <kern/kclock.h>
 
+//#define __ALL_COUNT__
+
+#ifdef __ALL_COUNT__
+#define __PT_REF__
+#define __PD_REF__
+#endif
 // These variables are set by i386_detect_memory()
 size_t npages;                  // Amount of physical memory (in pages)
 static size_t nAvailPages;      //Hawx: Amount of available physical memory (in pages) 
@@ -216,7 +222,6 @@ mem_init (void)
     check_page_free_list (1);
     check_page_alloc ();
     check_page ();
-    //panic ("mem_init: This function is not finished\n");
 
     //////////////////////////////////////////////////////////////////////
     // Now we set up virtual memory
@@ -250,6 +255,7 @@ mem_init (void)
     // We might not have 2^32 - KERNBASE bytes of physical memory, but
     // we just set up the mapping anyway.
     // Permissions: kernel RW, user NONE
+
     // Your code goes here:
 
     // Check that the initial page directory has been set up correctly.
@@ -398,6 +404,7 @@ page_alloc (int alloc_flags)
         memset ((void *) KADDR (ret_page->paddr), '\0', PGSIZE);
         //memset ((void *)  (ret_page->paddr), '\0', PGSIZE);
     }
+    ret_page->pp_ref = 0;
     return ret_page;
 }
 
@@ -477,7 +484,13 @@ pgdir_walk (pde_t * pgdir, const void *va, int create)
                 cprintf ("PTE doesn't exist and page_alloc failed\n");
                 break;
             }
+#ifdef __PD_REF__
+            INC_PGP(pgdir);
+#endif
+
+#ifndef __PT_REF__
             pde_pg->pp_ref++;
+#endif
             pgdir[PDX (va)] = pde_pg->paddr | PTE_P;
         }
 
@@ -559,7 +572,6 @@ page_insert (pde_t * pgdir, struct Page *pp, void *va, int perm)
      * The pointer address return by pgdir_walk is the VA now.
      */
     ptep = pgdir_walk (pgdir, va, CREATE);
-    pgdir[PDX (va)] |= perm;
 
     if (NIL == ptep)
     {
@@ -572,13 +584,22 @@ page_insert (pde_t * pgdir, struct Page *pp, void *va, int perm)
         return -E_UNSPECIFIED;
     }
 
+    pgdir[PDX (va)] |= perm;
     //map it!
-    if ((pp->paddr != PTE_ADDR (*ptep)) && (*ptep & PTE_P))
-    {
-        page_remove (pgdir, va);
-    }
     if ((pp->paddr != PTE_ADDR (*ptep)))
+    {
+        //Increase page table's self page count.
+#ifdef __PT_REF__
+        pa2page (PDE_ADDR (pgdir[PDX (va)]))->pp_ref++;
+#endif 
+
+        //Increase page's self page count.
         pp->pp_ref++;
+        if (*ptep & PTE_P)
+        {
+            page_remove (pgdir, va);
+        }
+    }
 
     *ptep = (page2pa (pp)) | perm | PTE_P;
 
@@ -646,12 +667,31 @@ page_remove (pde_t * pgdir, void *va)
         return;
     }
 
+    //Decrease Page's self pg_count;
     page_decref (rm_page);
     if (!rm_page->pp_ref)
     {
         tlb_invalidate (pgdir, va);
-        *rm_pte = 0;
     }
+    *rm_pte = 0;
+
+    
+#ifdef __PT_REF__
+    rm_page = pa2page (PDE_ADDR (pgdir[PDX (va)]));
+    page_decref (rm_page);
+    if (rm_page->pp_ref == 0)
+    {
+        tlb_invalidate (pgdir, va);
+        pgdir[PDX (va)] = 0;
+    }
+#endif
+
+#ifdef __PD_REF__
+    rm_page = GET_PGD_PG(pgdir);
+    page_decref (rm_page);
+#endif
+    
+
 
 }
 

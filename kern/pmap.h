@@ -21,8 +21,9 @@ extern pde_t *kern_pgdir;
 /*Hawx:
    For Page Directory's self page.
  */
-#define INC_PGP(__pgdir) (pa2page(PADDR(__pgdir)))->pp_ref++;
-#define DEC_PGP(__pgdir) (pa2page(PADDR(__pgdir)))->pp_ref--;
+#define GET_PGD_PG(__pgdir) (pa2page(PADDR(__pgdir)))
+#define INC_PGP(__pgdir) (GET_PGD_PG(__pgdir))->pp_ref++
+#define DEC_PGP(__pgdir) (GET_PGD_PG(__pgdir))->pp_ref--
 /*
    For Page Directory Entry's page.
  */

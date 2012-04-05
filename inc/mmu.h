@@ -67,8 +67,9 @@
 // Flags in PTE_SYSCALL may be used in system calls.  (Others may not.)
 #define PTE_SYSCALL	(PTE_AVAIL | PTE_P | PTE_W | PTE_U)
 
-//Hawx: Address in PTE or PDE
+//Hawx: Address in PTE/PDE
 #define PTE_ADDR(pte)	((physaddr_t) (pte) & ~0xFFF)
+#define PDE_ADDR(pte)	((physaddr_t) (pte) & ~0xFFF)
 // Control Register flags
 #define CR0_PE		0x00000001  // Protection Enable
 #define CR0_MP		0x00000002  // Monitor coProcessor
