@@ -77,8 +77,8 @@ static void check_kern_pgdir (void);
 static physaddr_t check_va2pa (pde_t * pgdir, uintptr_t va);
 static void check_page (void);
 static void check_page_installed_pgdir (void);
-static void boot_map_region (pde_t * pgdir, uintptr_t va, size_t size,
-                             physaddr_t pa, int perm);
+void boot_map_region (pde_t * pgdir, uintptr_t va, size_t size,
+                      physaddr_t pa, int perm);
 
 // This simple physical memory allocator is used only while JOS is setting
 // up its virtual memory system.  page_alloc() is the real allocator.
@@ -234,6 +234,9 @@ mem_init (void)
     //    - pages itself -- kernel RW, user NONE
 
     // Your code goes here:
+    boot_map_region (kern_pgdir, (uintptr_t) UPAGES,
+                     npages * sizeof (struct Page),
+                     PADDR (pages), PTE_U | PTE_P);
 
     //////////////////////////////////////////////////////////////////////
     // Use the physical memory that 'bootstack' refers to as the kernel
@@ -247,6 +250,18 @@ mem_init (void)
     //     Permissions: kernel RW, user NONE
 
     // Your code goes here:
+    /* 
+       boot_map_region(kern_pgdir
+       , (uintptr_t)(KSTACKTOP-PTSIZE)
+       , (uint32_t)(PTSIZE - KSTKSIZE)
+       , (physaddr_t)bootstacktop
+       , PTE_P);
+     */
+
+    boot_map_region (kern_pgdir, (uintptr_t) (KSTACKTOP - KSTKSIZE),
+                     (uint32_t) (KSTKSIZE), (physaddr_t) PADDR (bootstack),
+                     PTE_W);
+
 
     //////////////////////////////////////////////////////////////////////
     // Map all of physical memory at KERNBASE.
@@ -257,6 +272,9 @@ mem_init (void)
     // Permissions: kernel RW, user NONE
 
     // Your code goes here:
+    boot_map_region (kern_pgdir, (uintptr_t) KERNBASE,
+                     (uint32_t) (0xffffffff - KERNBASE), (physaddr_t) (0),
+                     PTE_W);
 
     // Check that the initial page directory has been set up correctly.
     check_kern_pgdir ();
@@ -485,13 +503,13 @@ pgdir_walk (pde_t * pgdir, const void *va, int create)
                 break;
             }
 #ifdef __PD_REF__
-            INC_PGP(pgdir);
+            INC_PGP (pgdir);
 #endif
 
 #ifndef __PT_REF__
             pde_pg->pp_ref++;
 #endif
-            pgdir[PDX (va)] = pde_pg->paddr | PTE_P;
+            pgdir[PDX (va)] = pde_pg->paddr | PTE_P | PTE_W;
         }
 
         //PDE exist now.
@@ -525,11 +543,21 @@ pgdir_walk (pde_t * pgdir, const void *va, int create)
 // mapped pages.
 //
 // Hint: the TA solution uses pgdir_walk
-static void
+void
 boot_map_region (pde_t * pgdir, uintptr_t va, size_t size, physaddr_t pa,
                  int perm)
 {
-    // Fill this function in
+    uint32_t i;
+    pte_t *ptep = NIL;
+
+    size = ROUNDUP (size, PGSIZE);
+    for (i = 0; i < size; i += PGSIZE)
+    {
+        ptep = pgdir_walk (pgdir, (void *) (va + i), CREATE);
+        assert (NIL != ptep);
+        *ptep = PTE_ADDR (pa + i) | perm | PTE_P;
+    }
+
 }
 
 //
@@ -591,7 +619,7 @@ page_insert (pde_t * pgdir, struct Page *pp, void *va, int perm)
         //Increase page table's self page count.
 #ifdef __PT_REF__
         pa2page (PDE_ADDR (pgdir[PDX (va)]))->pp_ref++;
-#endif 
+#endif
 
         //Increase page's self page count.
         pp->pp_ref++;
@@ -675,7 +703,7 @@ page_remove (pde_t * pgdir, void *va)
     }
     *rm_pte = 0;
 
-    
+
 #ifdef __PT_REF__
     rm_page = pa2page (PDE_ADDR (pgdir[PDX (va)]));
     page_decref (rm_page);
@@ -687,10 +715,10 @@ page_remove (pde_t * pgdir, void *va)
 #endif
 
 #ifdef __PD_REF__
-    rm_page = GET_PGD_PG(pgdir);
+    rm_page = GET_PGD_PG (pgdir);
     page_decref (rm_page);
 #endif
-    
+
 
 
 }
@@ -720,7 +748,8 @@ check_page_free_list (bool only_low_memory)
 {
     struct Page *pp;
     int pdx_limit = only_low_memory ? 1 : NPDENTRIES;
-    int nfree_basemem = 0, nfree_extmem = 0;
+    int nfree_basemem = 0,
+        nfree_extmem = 0;
     char *first_free_page;
 
     if (!page_free_list)
@@ -730,7 +759,8 @@ check_page_free_list (bool only_low_memory)
     {
         // Move pages with lower addresses first in the free
         // list, since entry_pgdir does not map all pages.
-        struct Page *pp1, *pp2;
+        struct Page *pp1,
+        *pp2;
         struct Page **tp[2] = { &pp1, &pp2 };
         for (pp = page_free_list; pp; pp = pp->pp_link)
         {
@@ -783,7 +813,10 @@ check_page_free_list (bool only_low_memory)
 static void
 check_page_alloc (void)
 {
-    struct Page *pp, *pp0, *pp1, *pp2;
+    struct Page *pp,
+    *pp0,
+    *pp1,
+    *pp2;
     int nfree;
     struct Page *fl;
     char *c;
@@ -865,7 +898,8 @@ check_page_alloc (void)
 static void
 check_kern_pgdir (void)
 {
-    uint32_t i, n;
+    uint32_t i,
+     n;
     pde_t *pgdir;
 
     pgdir = kern_pgdir;
@@ -882,8 +916,10 @@ check_kern_pgdir (void)
 
     // check kernel stack
     for (i = 0; i < KSTKSIZE; i += PGSIZE)
+    {
         assert (check_va2pa (pgdir, KSTACKTOP - KSTKSIZE + i) ==
                 PADDR (bootstack) + i);
+    }
     assert (check_va2pa (pgdir, KSTACKTOP - PTSIZE) == ~0);
 
     // check PDE permissions
@@ -943,9 +979,13 @@ check_va2pa (pde_t * pgdir, uintptr_t va)
 static void
 check_page (void)
 {
-    struct Page *pp, *pp0, *pp1, *pp2;
+    struct Page *pp,
+    *pp0,
+    *pp1,
+    *pp2;
     struct Page *fl;
-    pte_t *ptep, *ptep1;
+    pte_t *ptep,
+    *ptep1;
     void *va;
     int i;
     extern pde_t entry_pgdir[];
@@ -1071,7 +1111,7 @@ check_page (void)
     //                          pp0.page table page(lastly free)
     // so it should be returned by page_alloc
     // Hawx: pp1 is just freed, so when we use allocation, then we get the pp1-phy-addr. 
-    assert ((pp = page_alloc (0)) && pp == pp1);//Here is pp <-- pp0
+    assert ((pp = page_alloc (0)) && pp == pp1);    //Here is pp <-- pp0
 
     // should be no free memory
     assert (!page_alloc (0));
@@ -1128,8 +1168,7 @@ static void
 check_page_installed_pgdir (void)
 {
     struct Page *pp, *pp0, *pp1, *pp2;
-    struct Page *fl;
-    pte_t *ptep, *ptep1;
+    struct Page *fl; pte_t *ptep, *ptep1;
     uintptr_t va;
     int i;
 
