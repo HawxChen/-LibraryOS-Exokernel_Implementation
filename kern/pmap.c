@@ -1065,17 +1065,31 @@ check_page (void)
     assert (pp1->pp_ref == 0);
     assert (pp2->pp_ref == 0);
 
+#ifndef __ALL_COUNT__
+    //Page Table has no other entry, So I freed page table page already.
+    //Current Available Pages : pp1 page
+    //                          pp0.page table page(lastly free)
     // so it should be returned by page_alloc
     // Hawx: pp1 is just freed, so when we use allocation, then we get the pp1-phy-addr. 
-    assert ((pp = page_alloc (0)) && pp == pp1);
+    assert ((pp = page_alloc (0)) && pp == pp1);//Here is pp <-- pp0
 
     // should be no free memory
     assert (!page_alloc (0));
+#endif
 
     // forcibly take pp0 back
+#ifdef __ALL_COUNT__
+    //PTE_ADDR (kern_pgdir[0]) is already ZERO.
+    //assert (PTE_ADDR (kern_pgdir[0]) == page2pa (pp0));
+    //kern_pgdir[0] = 0;
+    //Page Table has no other entry, So I freed page table page already.
+    assert (pp0->pp_ref == 0);
+#else
     assert (PTE_ADDR (kern_pgdir[0]) == page2pa (pp0));
     kern_pgdir[0] = 0;
     assert (pp0->pp_ref == 1);
+#endif
+
     pp0->pp_ref = 0;
 
     // check pointer arithmetic in pgdir_walk
