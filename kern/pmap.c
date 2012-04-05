@@ -258,6 +258,9 @@ mem_init (void)
        , PTE_P);
      */
 
+    /*
+     *bootstack is the pointer in C, It is the Virtual memory....
+     */
     boot_map_region (kern_pgdir, (uintptr_t) (KSTACKTOP - KSTKSIZE),
                      (uint32_t) (KSTKSIZE), (physaddr_t) PADDR (bootstack),
                      PTE_W);
