@@ -1,0 +1,15 @@
+/obj
+/jos.in
+/jos.log
+/jos.out
+/jos.out.*
+/jos.cmd
+/.gdbinit
+/wget.log
+/slirp.cap
+/qemu.out
+/qemu.log
+/lab?-handin.tar.gz
+/lab?/
+/sol?/
+/conf/lab.mk
