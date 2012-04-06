@@ -1,0 +1,9 @@
+git status
+git fetch
+git clone https://HawxChen@github.com/HawxChen/MIT-6.828-Adventure.git .
+git checkout -b lab3 origin/lab3
+git remote add mit http://pdos.csail.mit.edu/6.828/2011/jos.git
+git branch -a
+git pull mit lab3
+git mergetool -t vim [file]
+http://stackoverflow.com/questions/7438313/pushing-to-git-returning-error-code-403-fatal-http-request-failed
