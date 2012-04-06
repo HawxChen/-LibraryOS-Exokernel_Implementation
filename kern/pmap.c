@@ -78,7 +78,7 @@ static physaddr_t check_va2pa (pde_t * pgdir, uintptr_t va);
 static void check_page (void);
 static void check_page_installed_pgdir (void);
 static void boot_map_region (pde_t * pgdir, uintptr_t va, size_t size,
-                      physaddr_t pa, int perm);
+                             physaddr_t pa, int perm);
 
 // This simple physical memory allocator is used only while JOS is setting
 // up its virtual memory system.  page_alloc() is the real allocator.
@@ -751,8 +751,7 @@ check_page_free_list (bool only_low_memory)
 {
     struct Page *pp;
     int pdx_limit = only_low_memory ? 1 : NPDENTRIES;
-    int nfree_basemem = 0,
-        nfree_extmem = 0;
+    int nfree_basemem = 0, nfree_extmem = 0;
     char *first_free_page;
 
     if (!page_free_list)
@@ -762,8 +761,7 @@ check_page_free_list (bool only_low_memory)
     {
         // Move pages with lower addresses first in the free
         // list, since entry_pgdir does not map all pages.
-        struct Page *pp1,
-        *pp2;
+        struct Page *pp1, *pp2;
         struct Page **tp[2] = { &pp1, &pp2 };
         for (pp = page_free_list; pp; pp = pp->pp_link)
         {
@@ -816,10 +814,7 @@ check_page_free_list (bool only_low_memory)
 static void
 check_page_alloc (void)
 {
-    struct Page *pp,
-    *pp0,
-    *pp1,
-    *pp2;
+    struct Page *pp, *pp0, *pp1, *pp2;
     int nfree;
     struct Page *fl;
     char *c;
@@ -901,8 +896,7 @@ check_page_alloc (void)
 static void
 check_kern_pgdir (void)
 {
-    uint32_t i,
-     n;
+    uint32_t i, n;
     pde_t *pgdir;
 
     pgdir = kern_pgdir;
@@ -982,13 +976,9 @@ check_va2pa (pde_t * pgdir, uintptr_t va)
 static void
 check_page (void)
 {
-    struct Page *pp,
-    *pp0,
-    *pp1,
-    *pp2;
+    struct Page *pp, *pp0, *pp1, *pp2;
     struct Page *fl;
-    pte_t *ptep,
-    *ptep1;
+    pte_t *ptep, *ptep1;
     void *va;
     int i;
     extern pde_t entry_pgdir[];
@@ -1033,6 +1023,9 @@ check_page (void)
     assert (page_insert (kern_pgdir, pp2, (void *) PGSIZE, PTE_W) == 0);
     assert (check_va2pa (kern_pgdir, PGSIZE) == page2pa (pp2)); //Assign page frame to the right PTE through PDE.
     assert (pp2->pp_ref == 1);
+#ifdef __ALL_COUNT__
+    assert (pp0->pp_ref == 2);
+#endif
 
     // should be no free memory
     assert (!page_alloc (0));
@@ -1042,6 +1035,9 @@ check_page (void)
     assert (page_insert (kern_pgdir, pp2, (void *) PGSIZE, PTE_W) == 0);
     assert (check_va2pa (kern_pgdir, PGSIZE) == page2pa (pp2));
     assert (pp2->pp_ref == 1);
+#ifdef __ALL_COUNT__
+    assert (pp0->pp_ref == 2);
+#endif
 
     // pp2 should NOT be on the free list
     // could happen in ref counts are handled sloppily in page_insert
@@ -1084,6 +1080,9 @@ check_page (void)
     // ... and ref counts should reflect this
     assert (pp1->pp_ref == 2);
     assert (pp2->pp_ref == 0);
+#ifdef __ALL_COUNT__
+    assert (pp0->pp_ref == 2);
+#endif
 
     // pp2 should be returned by page_alloc
     // Hawx: pp2 is just freed, so when we use allocation, then we get the pp2-phy-addr. 
@@ -1098,6 +1097,9 @@ check_page (void)
     assert (check_va2pa (kern_pgdir, PGSIZE) == page2pa (pp1));
     assert (pp1->pp_ref == 1);
     assert (pp2->pp_ref == 0);
+#ifdef __ALL_COUNT__
+    assert (pp0->pp_ref == 1);
+#endif
 
     // unmapping pp1 at PGSIZE should free it
     // Hawx: Free pp1 at PGSIZE. 
@@ -1107,7 +1109,9 @@ check_page (void)
     assert (check_va2pa (kern_pgdir, PGSIZE) == ~0);
     assert (pp1->pp_ref == 0);
     assert (pp2->pp_ref == 0);
-
+#ifdef __ALL_COUNT__
+    assert (pp0->pp_ref == 0);
+#endif
 #ifndef __ALL_COUNT__
     //Page Table has no other entry, So I freed page table page already.
     //Current Available Pages : pp1 page
@@ -1171,7 +1175,8 @@ static void
 check_page_installed_pgdir (void)
 {
     struct Page *pp, *pp0, *pp1, *pp2;
-    struct Page *fl; pte_t *ptep, *ptep1;
+    struct Page *fl;
+    pte_t *ptep, *ptep1;
     uintptr_t va;
     int i;
 
@@ -1194,12 +1199,28 @@ check_page_installed_pgdir (void)
     assert (*(uint32_t *) page2kva (pp2) == 0x03030303U);
     page_remove (kern_pgdir, (void *) PGSIZE);
     assert (pp2->pp_ref == 0);
+#ifdef __ALL_COUNT__
+    //PTE_ADDR (kern_pgdir[0]) is already ZERO.
+    //assert (PTE_ADDR (kern_pgdir[0]) == page2pa (pp0));
+    //kern_pgdir[0] = 0;
+    //Page Table has no other entry, So I freed page table page already.
+    assert (pp0->pp_ref == 0);
+#else
+    assert (PTE_ADDR (kern_pgdir[0]) == page2pa (pp0));
+    kern_pgdir[0] = 0;
+    assert (pp0->pp_ref == 1);
+#endif
 
+    pp0->pp_ref = 0;
+
+
+    /*
     // forcibly take pp0 back
     assert (PTE_ADDR (kern_pgdir[0]) == page2pa (pp0));
     kern_pgdir[0] = 0;
     assert (pp0->pp_ref == 1);
     pp0->pp_ref = 0;
+     */
 
     // free the pages we took
     page_free (pp0);
