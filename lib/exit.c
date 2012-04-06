@@ -2,8 +2,7 @@
 #include <inc/lib.h>
 
 void
-exit(void)
+exit (void)
 {
-	sys_env_destroy(0);
+    sys_env_destroy (0);
 }
-

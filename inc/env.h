@@ -30,30 +30,33 @@ typedef int32_t envid_t;
 #define ENVX(envid)		((envid) & (NENV - 1))
 
 // Values of env_status in struct Env
-enum {
-	ENV_FREE = 0,
-	ENV_RUNNABLE,
-	ENV_RUNNING,
-	ENV_NOT_RUNNABLE
+enum
+{
+    ENV_FREE = 0,
+    ENV_RUNNABLE,
+    ENV_RUNNING,
+    ENV_NOT_RUNNABLE
 };
 
 // Special environment types
-enum EnvType {
-	ENV_TYPE_USER = 0,
-	ENV_TYPE_IDLE,
+enum EnvType
+{
+    ENV_TYPE_USER = 0,
+    ENV_TYPE_IDLE,
 };
 
-struct Env {
-	struct Trapframe env_tf;	// Saved registers
-	struct Env *env_link;		// Next free Env
-	envid_t env_id;			// Unique environment identifier
-	envid_t env_parent_id;		// env_id of this env's parent
-	enum EnvType env_type;		// Indicates special system environments
-	unsigned env_status;		// Status of the environment
-	uint32_t env_runs;		// Number of times environment has run
+struct Env
+{
+    struct Trapframe env_tf;    // Saved registers
+    struct Env *env_link;       // Next free Env
+    envid_t env_id;             // Unique environment identifier
+    envid_t env_parent_id;      // env_id of this env's parent
+    enum EnvType env_type;      // Indicates special system environments
+    unsigned env_status;        // Status of the environment
+    uint32_t env_runs;          // Number of times environment has run
 
-	// Address space
-	pde_t *env_pgdir;		// Kernel virtual address of page dir
+    // Address space
+    pde_t *env_pgdir;           // Kernel virtual address of page dir
 };
 
 #endif // !JOS_INC_ENV_H

@@ -6,8 +6,7 @@
 const char *hello = "hello, world\n";
 
 void
-umain(int argc, char **argv)
+umain (int argc, char **argv)
 {
-	sys_cputs(hello, 1024*1024);
+    sys_cputs (hello, 1024 * 1024);
 }
-

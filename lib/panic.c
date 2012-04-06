@@ -9,22 +9,21 @@ const char *argv0;
  * which causes JOS to enter the JOS kernel monitor.
  */
 void
-_panic(const char *file, int line, const char *fmt, ...)
+_panic (const char *file, int line, const char *fmt, ...)
 {
-	va_list ap;
+    va_list ap;
 
-	va_start(ap, fmt);
+    va_start (ap, fmt);
 
-	// Print the panic message
-	if (argv0)
-		cprintf("%s: ", argv0);
-	cprintf("[%08x] user panic in %s at %s:%d: ",
-		sys_getenvid(), binaryname, file, line);
-	vcprintf(fmt, ap);
-	cprintf("\n");
+    // Print the panic message
+    if (argv0)
+        cprintf ("%s: ", argv0);
+    cprintf ("[%08x] user panic in %s at %s:%d: ",
+             sys_getenvid (), binaryname, file, line);
+    vcprintf (fmt, ap);
+    cprintf ("\n");
 
-	// Cause a breakpoint exception
-	while (1)
-		asm volatile("int3");
+    // Cause a breakpoint exception
+    while (1)
+        asm volatile ("int3");
 }
-
