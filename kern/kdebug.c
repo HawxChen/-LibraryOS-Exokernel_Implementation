@@ -4,11 +4,21 @@
 #include <inc/assert.h>
 
 #include <kern/kdebug.h>
+#include <kern/pmap.h>
+#include <kern/env.h>
 
 extern const struct Stab __STAB_BEGIN__[];  // Beginning of stabs table
 extern const struct Stab __STAB_END__[];    // End of stabs table
 extern const char __STABSTR_BEGIN__[];  // Beginning of string table
 extern const char __STABSTR_END__[];    // End of string table
+
+struct UserStabData
+{
+    const struct Stab *stabs;
+    const struct Stab *stab_end;
+    const char *stabstr;
+    const char *stabstr_end;
+};
 
 
 // stab_binsearch(stabs, region_left, region_right, type, addr)

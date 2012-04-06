@@ -16,13 +16,16 @@
 #define GD_KD     0x10          // kernel data
 #define GD_UT     0x18          // user text
 #define GD_UD     0x20          // user data
-#define GD_TSS    0x28          // Task segment selector
+//#define GD_TSS    0x28          // Task segment selector
+#define GD_TSS0   0x28          // Task segment selector for CPU 0
 
 /*
  * Virtual memory map:                                Permissions
  *                                                    kernel/user
  *
  *    4 Gig -------->  +------------------------------+
+ *                     |       Memory-mapped I/O      | RW/--
+ *    IOMEMBASE ---->  +------------------------------+ 0xfe000000
  *                     |                              | RW/--
  *                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *                     :              .               :
@@ -33,11 +36,18 @@
  *                     |   Remapped Physical Memory   | RW/--
  *                     |                              | RW/--
  *    KERNBASE ----->  +------------------------------+ 0xf0000000
- *                     |       Empty Memory (*)       | --/--  PTSIZE
+ *                     |      Invalid Memory (*)      | --/--  PTSIZE
  *    KSTACKTOP ---->  +------------------------------+ 0xefc00000      --+
- *                     |         Kernel Stack         | RW/--  KSTKSIZE   |
+ *                     |     CPU0's Kernel Stack      | RW/--  KSTKSIZE   |
+ *                     | - - - - - - - - - - - - - - -|                   |
+ *                     |      Invalid Memory (*)      | --/--  KSTKGAP    |
+ *                     +------------------------------+                   |
+ *                     |     CPU1's Kernel Stack      | RW/--  KSTKSIZE   |
  *                     | - - - - - - - - - - - - - - -|                 PTSIZE
- *                     |      Invalid Memory (*)      | --/--             |
+ *                     |      Invalid Memory (*)      | --/--  KSTKGAP    |
+ *                     +------------------------------+                   |
+ *                     :              .               :                   |
+ *                     :              .               :                   |
  *    ULIM     ------> +------------------------------+ 0xef800000      --+
  *                     |  Cur. Page Table (User R-)   | R-/R-  PTSIZE
  *    UVPT      ---->  +------------------------------+ 0xef400000
@@ -94,6 +104,7 @@
  */
 #define KSTACKTOP	(KERNBASE - PTSIZE)
 #define KSTKSIZE	(8*PGSIZE)  // size of a kernel stack
+#define KSTKGAP		(8*PGSIZE)  // size of a kernel stack guard
 #define ULIM		(KSTACKTOP - PTSIZE)
 
 /*
