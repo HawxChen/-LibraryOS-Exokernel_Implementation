@@ -483,8 +483,8 @@ page_decref (struct Page *pp)
 pte_t *
 pgdir_walk (pde_t * pgdir, const void *va, int create)
 {
-
     physaddr_t pa = 0;
+    pte_t* pgtable = NIL;
     struct Page *pde_pg;
     do
     {
@@ -512,8 +512,9 @@ pgdir_walk (pde_t * pgdir, const void *va, int create)
 #ifndef __PT_REF__
             pde_pg->pp_ref++;
 #endif
-            pgdir[PDX (va)] = pde_pg->paddr | PTE_P | PTE_W;
+            pgdir[PDX (va)] = page2pa(pde_pg) | PTE_P | PTE_W;
         }
+        pgtable = page2kva(pde_pg);
 
         //PDE exist now.
         /*Why
@@ -528,7 +529,7 @@ pgdir_walk (pde_t * pgdir, const void *va, int create)
            0x1000: 0x00000000
          */
 //        return ((( (pde_pg->paddr)) + PTX (va)));
-        return ((pte_t *) KADDR (pde_pg->paddr)) + PTX (va);
+        return  &pgtable[PTX(va)];//((pte_t *) KADDR (pde_pg->paddr)) + PTX (va);
     }
     while (FALSE);
 
