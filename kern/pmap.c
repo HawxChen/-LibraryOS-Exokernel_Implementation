@@ -43,6 +43,8 @@ nvram_read (int r)
  *Hawx: descide the value of npages.
  *                           npages_basemem
  *                           npages_extmem
+ *
+ * Limitation
  */
 static void
 i386_detect_memory (void)
@@ -105,6 +107,7 @@ boot_alloc (uint32_t n)
     // which points to the end of the kernel's bss segment:
     // the first virtual address that the linker did *not* assign
     // to any kernel code or global variables.
+    // Linker just assigned virtual address to its magic symbol.
 
     /*
      *Hawx: .bss is the section to store the uninitialized global data.
@@ -319,7 +322,6 @@ mem_init (void)
 void
 page_init (void)
 {
-    extern char end[];
     physaddr_t next_boot_free;
     /*
      *Hawx; map it from [0 npages_basemem]
@@ -626,6 +628,10 @@ page_insert (pde_t * pgdir, struct Page *pp, void *va, int perm)
 #endif
 
         //Increase page's self page count.
+        /*
+           In future labs you will often have the same physical page mapped at
+           multiple virtual addresses simultaneously
+         */
         pp->pp_ref++;
         if (*ptep & PTE_P)
         {
