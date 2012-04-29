@@ -622,6 +622,11 @@ page_insert (pde_t * pgdir, struct Page *pp, void *va, int perm)
     //map it!
     if ((pp->paddr != PTE_ADDR (*ptep)))
     {
+        //If this virtual page slot doesn't map to its page yet,
+        //note 1. Inc the count to physical page.
+        //note 2. If the virtual has the phy page exsit,
+        //         then remove it to map current phy-page.
+
         //Increase page table's self page count.
 #ifdef __PT_REF__
         pa2page (PDE_ADDR (pgdir[PDX (va)]))->pp_ref++;
