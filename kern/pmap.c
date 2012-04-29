@@ -44,6 +44,8 @@ nvram_read (int r)
  *Hawx: descide the value of npages.
  *                           npages_basemem
  *                           npages_extmem
+ *
+ * Limitation
  */
 static void
 i386_detect_memory (void)
@@ -106,6 +108,7 @@ boot_alloc (uint32_t n)
     // which points to the end of the kernel's bss segment:
     // the first virtual address that the linker did *not* assign
     // to any kernel code or global variables.
+    // Linker just assigned virtual address to its magic symbol.
 
     /*
      *Hawx: .bss is the section to store the uninitialized global data.
@@ -320,7 +323,6 @@ mem_init (void)
 void
 page_init (void)
 {
-    extern char end[];
     physaddr_t next_boot_free;
     /*
      *Hawx; map it from [0 npages_basemem]
@@ -484,8 +486,8 @@ page_decref (struct Page *pp)
 pte_t *
 pgdir_walk (pde_t * pgdir, const void *va, int create)
 {
-
     physaddr_t pa = 0;
+    pte_t* pgtable = NIL;
     struct Page *pde_pg;
     do
     {
@@ -513,8 +515,9 @@ pgdir_walk (pde_t * pgdir, const void *va, int create)
 #ifndef __PT_REF__
             pde_pg->pp_ref++;
 #endif
-            pgdir[PDX (va)] = pde_pg->paddr | PTE_P | PTE_W;
+            pgdir[PDX (va)] = page2pa(pde_pg) | PTE_P | PTE_W;
         }
+        pgtable = page2kva(pde_pg);
 
         //PDE exist now.
         /*Why
@@ -529,7 +532,7 @@ pgdir_walk (pde_t * pgdir, const void *va, int create)
            0x1000: 0x00000000
          */
 //        return ((( (pde_pg->paddr)) + PTX (va)));
-        return ((pte_t *) KADDR (pde_pg->paddr)) + PTX (va);
+        return  &pgtable[PTX(va)];//((pte_t *) KADDR (pde_pg->paddr)) + PTX (va);
     }
     while (FALSE);
 
@@ -620,12 +623,21 @@ page_insert (pde_t * pgdir, struct Page *pp, void *va, int perm)
     //map it!
     if ((pp->paddr != PTE_ADDR (*ptep)))
     {
+        //If this virtual page slot doesn't map to its page yet,
+        //note 1. Inc the count to physical page.
+        //note 2. If the virtual has the phy page exsit,
+        //         then remove it to map current phy-page.
+
         //Increase page table's self page count.
 #ifdef __PT_REF__
         pa2page (PDE_ADDR (pgdir[PDX (va)]))->pp_ref++;
 #endif
 
         //Increase page's self page count.
+        /*
+           In future labs you will often have the same physical page mapped at
+           multiple virtual addresses simultaneously
+         */
         pp->pp_ref++;
         if (*ptep & PTE_P)
         {
