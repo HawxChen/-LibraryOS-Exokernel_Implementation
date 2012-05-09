@@ -29,6 +29,9 @@ struct Page *pages;             // Physical page state array
 static struct Page *page_free_list; // Free list of physical pages
 static struct Page *tail_free_page; // Free list of physical pages
 
+//Env varaiables declaration.
+extern struct Env* envs;
+
 
 // --------------------------------------------------------------
 // Detect machine's physical memory setup.
@@ -213,6 +216,8 @@ mem_init (void)
 
     // Your code goes here:
     pages = (struct Page *) boot_alloc (sizeof (struct Page) * npages);
+    envs = (struct Env *) boot_alloc(sizeof(struct Env) * NENV);
+
 
 
     //////////////////////////////////////////////////////////////////////
@@ -240,7 +245,7 @@ mem_init (void)
     // Your code goes here:
     boot_map_region (kern_pgdir, (uintptr_t) UPAGES,
                      npages * sizeof (struct Page),
-                     PADDR (pages), PTE_U | PTE_P);
+                     PADDR (pages), PTE_U);
 
     //////////////////////////////////////////////////////////////////////
     // Use the physical memory that 'bootstack' refers to as the kernel
@@ -283,6 +288,10 @@ mem_init (void)
                      (uint32_t) (0xffffffff - KERNBASE), (physaddr_t) (0),
                      PTE_W);
 
+    /*
+       Map the envs to UENVS(UTOP)
+     */
+    boot_map_region (kern_pgdir, (uintptr_t) UENVS, NENV * sizeof(struct Env) , PADDR(envs), PTE_U);
     // Check that the initial page directory has been set up correctly.
     check_kern_pgdir ();
 
@@ -630,6 +639,15 @@ page_insert (pde_t * pgdir, struct Page *pp, void *va, int perm)
 
         //Increase page table's self page count.
 #ifdef __PT_REF__
+        /* Issue No.01
+         *This line has the bug!
+         *pa-A replace the va-X slot occupied by pa-B.
+         *Page table's count to use doesn't increase.
+         *Before: va-X slot owns pa-B. count --.
+         *After : va-X slot owns pa-A. count ++.
+         *doen't change.
+         *Here increases for any condition.
+         */
         pa2page (PDE_ADDR (pgdir[PDX (va)]))->pp_ref++;
 #endif
 
@@ -642,6 +660,18 @@ page_insert (pde_t * pgdir, struct Page *pp, void *va, int perm)
         if (*ptep & PTE_P)
         {
             page_remove (pgdir, va);
+#ifdef __PT_REF__
+        /* Issue No.01 fixed!
+         *This line has the bug!
+         *pa-A replace the va-X slot occupied by pa-B.
+         *Page table's count to use doesn't increase.
+         *Before: va-X slot owns pa-B. count --.
+         *After : va-X slot owns pa-A. count ++.
+         *doen't change.
+         *If the va slot had one page to use, then it should decrease the count for 1.
+         */
+        pa2page (PDE_ADDR (pgdir[PDX (va)]))->pp_ref--;
+#endif
         }
     }
 
@@ -649,7 +679,6 @@ page_insert (pde_t * pgdir, struct Page *pp, void *va, int perm)
 
 
     return 0;
-
 }
 
 //
@@ -986,6 +1015,7 @@ check_kern_pgdir (void)
         case PDX (UVPT):
         case PDX (KSTACKTOP - 1):
         case PDX (UPAGES):
+        case PDX(UENVS):
             assert (pgdir[i] & PTE_P);
             break;
         default:
