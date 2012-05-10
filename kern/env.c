@@ -55,6 +55,7 @@ struct Segdesc gdt[] = {
 };
 
 struct Pseudodesc gdt_pd = {
+    //Lim             Base
     sizeof (gdt) - 1, (unsigned long) gdt
 };
 
@@ -118,6 +119,15 @@ env_init (void)
 {
     // Set up envs array
     // LAB 3: Your code here.
+    unsigned int i = 0;
+    memset((void*)envs, 0, NENV * sizeof(struct Env));
+
+    env_free_list = &envs[0];
+    for(i = 1; i < NENV; i++)
+    {
+        envs[i-1].env_link = &envs[i];
+    }
+    envs[NENV-1].env_link =  NIL;
 
     // Per-CPU part of the initialization
     env_init_percpu ();
@@ -181,6 +191,15 @@ env_setup_vm (struct Env *e)
     //    - The functions in kern/pmap.h are handy.
 
     // LAB 3: Your code here.
+    //Above UTOP.
+    /*Hawx: We use the kern_pgdir as the template. 
+     *      Just only for memory above UTOP.
+     */
+    memcpy(((void*)(p->paddr)) + PDX(UTOP)/*Pointer Add*/,
+            (void*)(get_kern_pgdir + PDX(UTOP))/*Pointer Add*/,
+            PGSIZE - PDX(UTOP)*4/*Integer Add*/);
+
+    e->env_pgdir = ; 
 
     // UVPT maps the env's own page table read-only.
     // Permissions: kernel R, user R

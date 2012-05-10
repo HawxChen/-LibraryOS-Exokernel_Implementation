@@ -178,6 +178,10 @@ boot_alloc (uint32_t n)
 //
 // From UTOP to ULIM, the user is allowed to read but not write.
 // Above ULIM the user cannot read or write.
+pte_t* get_kern_pgdir()
+{
+    return kern_pgdir;
+}
 void
 mem_init (void)
 {
