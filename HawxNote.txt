@@ -1,0 +1,15 @@
+Problem:
+Note "Prob:" tag.
+1. Why does lib/string.h have no prototype for memcpy?
+    Platform dependent?!
+
+2. Load ELF
+   filesz memsz.
+   load into address space:  filesz
+   Execute at address space: memsz
+   How did the text work live in (extension)range memsz?
+
+3. What's about UVPT for?
+   UVPT is for what usage.
+   Note UVPT use the the lec4. skill backpointer to itself.
+   

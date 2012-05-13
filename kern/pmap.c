@@ -98,6 +98,11 @@ static void boot_map_region (pde_t * pgdir, uintptr_t va, size_t size,
 // If we're out of memory, boot_alloc should panic.
 // This function may ONLY be used during initialization,
 // before the page_free_list list has been set up.
+/*
+ *It should be much more robust!
+ *when allocate the space, it should avoid IOmem,page0, reference from page_init.
+ *
+ */
 static void *
 boot_alloc (uint32_t n)
 {
@@ -178,7 +183,7 @@ boot_alloc (uint32_t n)
 //
 // From UTOP to ULIM, the user is allowed to read but not write.
 // Above ULIM the user cannot read or write.
-pte_t* get_kern_pgdir()
+pte_t* get_kernpgdir()
 {
     return kern_pgdir;
 }
@@ -295,7 +300,10 @@ mem_init (void)
     /*
        Map the envs to UENVS(UTOP)
      */
-    boot_map_region (kern_pgdir, (uintptr_t) UENVS, NENV * sizeof(struct Env) , PADDR(envs), PTE_U);
+    boot_map_region (kern_pgdir,
+            (uintptr_t) UENVS,
+            NENV * sizeof(struct Env),
+            PADDR(envs), PTE_U);
     // Check that the initial page directory has been set up correctly.
     check_kern_pgdir ();
 

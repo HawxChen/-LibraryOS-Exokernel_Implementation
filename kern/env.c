@@ -195,11 +195,23 @@ env_setup_vm (struct Env *e)
     /*Hawx: We use the kern_pgdir as the template. 
      *      Just only for memory above UTOP.
      */
-    memcpy(((void*)(p->paddr)) + PDX(UTOP)/*Pointer Add*/,
-            (void*)(get_kern_pgdir + PDX(UTOP))/*Pointer Add*/,
+#if 0    
+    memcpy(((void*)page2kva(p)) + PDX(UTOP)/*Pointer Add*/,
+            (void*)(get_kernpgdir() + PDX(UTOP))/*Pointer Add*/,
             PGSIZE - PDX(UTOP)*4/*Integer Add*/);
+#endif
 
-    e->env_pgdir = ; 
+    memmove(((void*)page2kva(p)) + PDX(UTOP)/*Pointer Add*/,
+            (void*)(get_kernpgdir() + PDX(UTOP))/*Pointer Add*/,
+            PGSIZE - PDX(UTOP)*4/*Integer Add*/);
+    p->pp_ref ++;
+
+    /*
+     *Hawx: assumption: User process does't share the page table!
+     *      Think: If fork?...
+     */
+    assert(p->pp_ref == 1);
+    e->env_pgdir = page2kva(p); 
 
     // UVPT maps the env's own page table read-only.
     // Permissions: kernel R, user R
@@ -288,6 +300,35 @@ region_alloc (struct Env *e, void *va, size_t len)
     //   'va' and 'len' values that are not page-aligned.
     //   You should round va down, and round (va + len) up.
     //   (Watch out for corner-cases!)
+
+    /*
+     * Hawx: corner case- len 4K Byte? len 0 Byte?
+     *                    len cross two pages?
+     */
+    struct Page* p = NIL;
+    uint32_t rdown_va = 0;
+    uint32_t dstoft = 0;
+    dstoft = ((uint32_t)(va)) + len;
+    /*
+    Prob: But What's about UVPT for?
+     */
+    if(UTOP <= ROUNDUP(dstoft, PGSIZE) + len)
+    {
+        panic("Fatal UTOP <= ROUNUP( ((uint32_t)(va)) + len)");
+    }
+    rdown_va = (uint32_t)ROUNDDOWN(va, PGSIZE);
+    //for(;rdown_va < rup_dstoft; rdown_va += PGSIZE)
+    for(;rdown_va < dstoft; rdown_va += PGSIZE)
+    {
+        p = page_alloc(TRUE);
+        if(NIL == p)
+        {
+            panic("region_alloc: failed at page_alloc\n");
+            return;
+        }
+        page_insert(e->env_pgdir, p, (void*)rdown_va, PTE_W | PTE_U);
+    }
+    return ;
 }
 
 //
