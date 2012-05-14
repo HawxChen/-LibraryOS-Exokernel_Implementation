@@ -13,3 +13,8 @@ Note "Prob:" tag.
    UVPT is for what usage.
    Note UVPT use the the lec4. skill backpointer to itself.
    
+4. Assume for this function that no two segments will touch
+   the same virtual page.
+   xv6 assume it, too.
+   But if not, how did it map?
+

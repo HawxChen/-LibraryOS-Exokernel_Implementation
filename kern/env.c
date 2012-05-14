@@ -304,6 +304,7 @@ region_alloc (struct Env *e, void *va, size_t len)
     /*
      * Hawx: corner case- len 4K Byte? len 0 Byte?
      *                    len cross two pages?
+     *       It could reference allocuvm at xv6
      */
     struct Page* p = NIL;
     uint32_t rdown_va = 0;
@@ -320,13 +321,13 @@ region_alloc (struct Env *e, void *va, size_t len)
     //for(;rdown_va < rup_dstoft; rdown_va += PGSIZE)
     for(;rdown_va < dstoft; rdown_va += PGSIZE)
     {
-        p = page_alloc(TRUE);
+        p = page_alloc(FALSE);
         if(NIL == p)
         {
             panic("region_alloc: failed at page_alloc\n");
             return;
         }
-        page_insert(e->env_pgdir, p, (void*)rdown_va, PTE_W | PTE_U);
+        page_insert(e->env_pgdir, p, (void*)rdown_va, PTE_U);
     }
     return ;
 }
@@ -390,6 +391,39 @@ load_icode (struct Env *e, uint8_t * binary, size_t size)
     // at virtual address USTACKTOP - PGSIZE.
 
     // LAB 3: Your code here.
+    /*Hawx: Job List
+     Read Binary ELF's each prog seg into each virtual page.
+        filesz/memsz/offset
+        clear non-needed residual space as zero.
+     Setup privilege.
+     Setup Entry point*
+     Setup Stack 
+     */
+    struct Proghdr *ph = NIL;
+    struct Elf *elf = (struct Elf*)binary;
+    uint32_t i = 0;
+    pte_t* pte = NIL;
+    ph = (struct Proghdr*) ((uint8_t*) binary + elf->e_phoff);
+    for(i = 0; i < elf->e_phnum; i++)
+    {
+        if(ph->p_filesz > ph->p_memsz)
+        {
+            panic("ph->p_filesz > ph->p_memsz\n");
+            return;
+        }
+        region_alloc(e, (void*)ph->p_va, ph->p_memsz);
+        pte = pgdir_walk(e->env_pgdir,(void*) ph->p_va, NO_CREATE);
+        if(NIL == pte)
+        {
+            panic("pte not found!?\n");
+            return ;
+        }
+        *pte = *pte | PTE_U | PTE_W;
+        memset((void*)ROUNDDOWN(ph->p_va,PGSIZE),0 ,PGSIZE);
+        memmove((void*)ph->p_va, (void*)((uint8_t*)binary + ph->p_offset), ph->p_filesz);
+    }
+        
+
 }
 
 //
