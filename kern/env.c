@@ -271,7 +271,7 @@ env_alloc (struct Env **newenv_store, envid_t parent_id)
     e->env_tf.tf_ds = GD_UD | 3;
     e->env_tf.tf_es = GD_UD | 3;
     e->env_tf.tf_ss = GD_UD | 3;
-    e->env_tf.tf_esp = USTACKTOP;
+    e->env_tf.tf_esp = USTACKTOP;/*Prob. Why does in load_icode's instruction mean tf_esp = USTACKTOP - PGSIZE*/
     e->env_tf.tf_cs = GD_UT | 3;
     // You will set e->env_tf.tf_eip later.
 
@@ -290,7 +290,7 @@ env_alloc (struct Env **newenv_store, envid_t parent_id)
 // Pages should be writable by user and kernel.
 // Panic if any allocation attempt fails.
 //
-static void
+pte_t*
 region_alloc (struct Env *e, void *va, size_t len)
 {
     // LAB 3: Your code here.
@@ -325,11 +325,11 @@ region_alloc (struct Env *e, void *va, size_t len)
         if(NIL == p)
         {
             panic("region_alloc: failed at page_alloc\n");
-            return;
+            return NIL;
         }
         page_insert(e->env_pgdir, p, (void*)rdown_va, PTE_U);
     }
-    return ;
+    return pgdir_walk(e->env_pgdir,va, NO_CREATE);
 }
 
 //
@@ -344,16 +344,19 @@ region_alloc (struct Env *e, void *va, size_t len)
 // At the same time it clears to zero any portions of these segments
 // that are marked in the program header as being mapped
 // but not actually present in the ELF file - i.e., the program's bss section.
+//<<<<Read in program header and clear non-used code part to zero
 //
 // All this is very similar to what our boot loader does, except the boot
 // loader also needs to read the code from disk.  Take a look at
 // boot/main.c to get ideas.
+//<<< Just Map the prog header
 //
 // Finally, this function maps one page for the program's initial stack.
-//
+//<<<< Setup Stacks
+
 // load_icode panics if it encounters problems.
 //  - How might load_icode fail?  What might be wrong with the given input?
-//
+// >> Check Magic number
 static void
 load_icode (struct Env *e, uint8_t * binary, size_t size)
 {
@@ -396,13 +399,18 @@ load_icode (struct Env *e, uint8_t * binary, size_t size)
         filesz/memsz/offset
         clear non-needed residual space as zero.
      Setup privilege.
-     Setup Entry point*
+     Setup Entry point
      Setup Stack 
      */
     struct Proghdr *ph = NIL;
     struct Elf *elf = (struct Elf*)binary;
     uint32_t i = 0;
     pte_t* pte = NIL;
+    if(ELF_MAGIC != elf->e_magic)
+    {
+        cprintf("Error File header\n");
+        return;
+    }
     ph = (struct Proghdr*) ((uint8_t*) binary + elf->e_phoff);
     for(i = 0; i < elf->e_phnum; i++)
     {
@@ -411,9 +419,8 @@ load_icode (struct Env *e, uint8_t * binary, size_t size)
             panic("ph->p_filesz > ph->p_memsz\n");
             return;
         }
-        region_alloc(e, (void*)ph->p_va, ph->p_memsz);
-        pte = pgdir_walk(e->env_pgdir,(void*) ph->p_va, NO_CREATE);
-        if(NIL == pte)
+        
+        if(NIL == (pte = region_alloc(e, (void*)ph->p_va, ph->p_memsz)))
         {
             panic("pte not found!?\n");
             return ;
@@ -422,7 +429,22 @@ load_icode (struct Env *e, uint8_t * binary, size_t size)
         memset((void*)ROUNDDOWN(ph->p_va,PGSIZE),0 ,PGSIZE);
         memmove((void*)ph->p_va, (void*)((uint8_t*)binary + ph->p_offset), ph->p_filesz);
     }
-        
+
+    //Setup stack;
+    if(NIL == (pte = region_alloc(e,(void*)(USTACKTOP-PGSIZE),PGSIZE)))
+    {
+        panic("pte not found!?\n");
+        return ;
+    }
+    /*Be careful about stack over usage.*/
+    *pte = *pte | PTE_U | PTE_W;
+    e->env_tf.tf_esp = USTACKTOP-PGSIZE; 
+    memset((void*)e->env_tf.tf_esp,0 ,PGSIZE);
+
+    //Setup entry point
+    e->env_tf.tf_eip = elf->e_entry;
+
+    //Prob. Corresponding to env.h's problem         
 
 }
 
@@ -437,6 +459,12 @@ void
 env_create (uint8_t * binary, size_t size, enum EnvType type)
 {
     // LAB 3: Your code here.
+    /* Hawx: Jobs to do.
+     *      1.env_alloc
+     *      2.load the binay by load_icode
+     *      3.envt_type setup
+     *      4.parent id is zero.
+     */
 }
 
 //

@@ -43,6 +43,9 @@
 
 #include <inc/types.h>
 
+/*Prob. 1.Where is the kernel context regs part?
+ *      2.Where is the fs gs?
+ * */
 struct PushRegs
 {
     /* registers as pushed by pusha */
