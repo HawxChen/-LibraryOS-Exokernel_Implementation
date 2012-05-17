@@ -457,6 +457,7 @@ load_icode (struct Env *e, uint8_t * binary, size_t size)
 //
 void
 env_create (uint8_t * binary, size_t size, enum EnvType type)
+// Just only called before running the first user-mode environment.
 {
     // LAB 3: Your code here.
     /* Hawx: Jobs to do.
@@ -465,6 +466,13 @@ env_create (uint8_t * binary, size_t size, enum EnvType type)
      *      3.envt_type setup
      *      4.parent id is zero.
      */
+    struct Env *e = NIL;
+    env_alloc(&e, 0);
+    load_icode(e, binary, size);
+    e->env_type = type;
+
+    //parent_id is set actually by env_alloc.
+    e->parent_id =  0;
 }
 
 //

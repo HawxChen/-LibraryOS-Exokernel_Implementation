@@ -18,3 +18,6 @@ Note "Prob:" tag.
    xv6 assume it, too.
    But if not, how did it map?
 
+5. what's about the 'size' parameter for?
+   env_create (uint8_t * binary, size_t size, enum EnvType type))
+       load_icode (struct Env *e, uint8_t * binary, size_t size))
