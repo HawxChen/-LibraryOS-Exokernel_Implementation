@@ -1,0 +1,29 @@
+1. Misuse of region_alloc V.S. memset V.S memmove
+     if(NIL == (pte = region_alloc(e, (void*)ph->p_va, ph->p_memsz)))
+        {
+            panic("pte not found!?\n");
+            return ;
+        }
+        *pte = *pte | PTE_U | PTE_W;
+        memset((void*)ROUNDDOWN(ph->p_va,PGSIZE),0 ,PGSIZE);
+        memmove((void*)ph->p_va, (void*)((uint8_t*)binary + ph->p_offset), ph->p_filesz);    
+    The list to be clarified
+        A. region_alloc is to setup memory in sequence pages.
+        B. pte just get only one page! 
+            just set one page's privilege to PTE_U, PTE_W.
+        C. If memmove will use the size than one page, then it will raise fault by CPU!
+           Becuase the other PTEs(not the pte just get!) were not in the right privilege.
+        
+2. load_icode' lcr3' setup
+    A. lcr3 uses the physical address!
+    B. lcr3's right setup posistion!
+        Before the time that all the memory you want to chage!
+
+    3. stack's growth direction
+       memset((void*)(e->env_tf.tf_esp - PGSIZE),0 ,PGSIZE);)))
+       Error : e->env_tf.tf_esp = USTACKTOP-PGSIZE;
+       Right : e->env_tf.tf_esp = USTACKTOP;
+       push : esp = esp - 4
+       pop : esp = esp + 4
+       
+    

@@ -164,11 +164,15 @@ env_init_percpu (void)
 // Returns 0 on success, < 0 on error.  Errors include:
 //  -E_NO_MEM if page directory or table could not be allocated.
 //
-static int
+//static int
+int
 env_setup_vm (struct Env *e)
 {
     int i;
-    struct Page *p = NULL;
+    struct Page *p = NIL;
+    pte_t* kern_pgdir = NIL;
+    pte_t* ori_pte = NIL;
+    pte_t* dst_pte = NIL;
 
     // Allocate a page for the page directory
     if (!(p = page_alloc (ALLOC_ZERO)))
@@ -200,18 +204,28 @@ env_setup_vm (struct Env *e)
             (void*)(get_kernpgdir() + PDX(UTOP))/*Pointer Add*/,
             PGSIZE - PDX(UTOP)*4/*Integer Add*/);
 #endif
-
-    memmove(((void*)page2kva(p)) + PDX(UTOP)/*Pointer Add*/,
-            (void*)(get_kernpgdir() + PDX(UTOP))/*Pointer Add*/,
-            PGSIZE - PDX(UTOP)*4/*Integer Add*/);
+    e->env_pgdir = page2kva(p); 
+    kern_pgdir = get_kernpgdir();
+    memmove(e->env_pgdir, kern_pgdir, PGSIZE);
     p->pp_ref ++;
+#if 0  
+    for(i = PDX(UTOP); i < NPDENTRIES ;i++)
+    {
+        if( NIL == (ori_pte = pgdir_walk(kern_pgdir,(void*) (i * PGSIZE), NO_CREATE)))
+            continue;
+        cprintf("-%d-\n",i);
+        dst_pte = pgdir_walk(e->env_pgdir,(void*)(i*PGSIZE),CREATE);
+        *dst_pte = *ori_pte;
+
+    }
+#endif
+    
 
     /*
      *Hawx: assumption: User process does't share the page table!
      *      Think: If fork?...
      */
     assert(p->pp_ref == 1);
-    e->env_pgdir = page2kva(p); 
 
     // UVPT maps the env's own page table read-only.
     // Permissions: kernel R, user R
@@ -327,8 +341,9 @@ region_alloc (struct Env *e, void *va, size_t len)
             panic("region_alloc: failed at page_alloc\n");
             return NIL;
         }
-        page_insert(e->env_pgdir, p, (void*)rdown_va, PTE_U);
+        page_insert(e->env_pgdir, p, (void*)rdown_va, PTE_U | PTE_P | PTE_W);
     }
+    //the first pte!
     return pgdir_walk(e->env_pgdir,va, NO_CREATE);
 }
 
@@ -412,22 +427,20 @@ load_icode (struct Env *e, uint8_t * binary, size_t size)
         return;
     }
     ph = (struct Proghdr*) ((uint8_t*) binary + elf->e_phoff);
-    for(i = 0; i < elf->e_phnum; i++)
+    lcr3(PADDR(e->env_pgdir));
+    for(i = 0; i < elf->e_phnum; i++, ph++)
     {
+        if(ph->p_type != ELF_PROG_LOAD)
+            continue;
         if(ph->p_filesz > ph->p_memsz)
         {
             panic("ph->p_filesz > ph->p_memsz\n");
             return;
         }
         
-        if(NIL == (pte = region_alloc(e, (void*)ph->p_va, ph->p_memsz)))
-        {
-            panic("pte not found!?\n");
-            return ;
-        }
-        *pte = *pte | PTE_U | PTE_W;
-        memset((void*)ROUNDDOWN(ph->p_va,PGSIZE),0 ,PGSIZE);
-        memmove((void*)ph->p_va, (void*)((uint8_t*)binary + ph->p_offset), ph->p_filesz);
+        region_alloc(e, (void*)ph->p_va, ph->p_memsz);
+        memmove((void*)ph->p_va, (void*)(binary + ph->p_offset), ph->p_filesz);
+        memset((void*)(ph->p_va+ph->p_filesz),0, ph->p_memsz - ph->p_filesz);
     }
 
     //Setup stack;
@@ -437,14 +450,14 @@ load_icode (struct Env *e, uint8_t * binary, size_t size)
         return ;
     }
     /*Be careful about stack over usage.*/
-    *pte = *pte | PTE_U | PTE_W;
-    e->env_tf.tf_esp = USTACKTOP-PGSIZE; 
-    memset((void*)e->env_tf.tf_esp,0 ,PGSIZE);
+    //e->env_tf.tf_esp = USTACKTOP-PGSIZE; 
+    memset((void*)(e->env_tf.tf_esp - PGSIZE),0 ,PGSIZE);
 
     //Setup entry point
     e->env_tf.tf_eip = elf->e_entry;
 
     //Prob. Corresponding to env.h's problem         
+    lcr3(PADDR(get_kernpgdir()));
 
 }
 
@@ -472,7 +485,7 @@ env_create (uint8_t * binary, size_t size, enum EnvType type)
     e->env_type = type;
 
     //parent_id is set actually by env_alloc.
-    e->parent_id =  0;
+    e->env_parent_id =  0;
 }
 
 //
@@ -586,6 +599,20 @@ env_run (struct Env *e)
     //  e->env_tf to sensible values.
 
     // LAB 3: Your code here.
+
+    if(NIL != curenv)
+    {
+        if(ENV_RUNNING == curenv->env_type)
+            curenv->env_type = ENV_RUNNABLE;
+        /*Hawx:
+         *Other state could be in- like: waiting for I/O so as to be ENV_NOT_RUNNABLE
+         */
+    }
+    curenv = e;
+    curenv->env_type = ENV_RUNNING;
+    curenv->env_runs++;
+    lcr3(PADDR(curenv->env_pgdir));
+    env_pop_tf(& curenv->env_tf);
 
     panic ("env_run not yet implemented");
 }

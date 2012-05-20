@@ -182,7 +182,9 @@ tarball: realclean
 	tar cf - `find . -type f | grep -v '^\.*$$' | grep -v '/CVS/' | grep -v '/\.svn/' | grep -v '/\.git/' | grep -v 'lab[0-9].*\.tar\.gz'` | gzip > lab$(LAB)-handin.tar.gz
 #Kill QEMU
 kq:
-	@pkill qemu
+	@pkill qemu 
+cltmp:
+	find . -name '\.*\.sw*' | xargs rm
 
 # For test runs
 prep-%:

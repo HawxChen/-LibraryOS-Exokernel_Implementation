@@ -191,7 +191,7 @@ void
 mem_init (void)
 {
     uint32_t cr0;
-    size_t n;
+    uint32_t test_i;
 
     // Find out how much memory the machine has (npages & npages_basemem).
     i386_detect_memory ();
@@ -306,6 +306,8 @@ mem_init (void)
             PADDR(envs), PTE_U);
     // Check that the initial page directory has been set up correctly.
     check_kern_pgdir ();
+
+
 
     // Switch from the minimal entry page directory to the full kern_pgdir
     // page table we just created.  Our instruction pointer should be
@@ -521,7 +523,7 @@ pgdir_walk (pde_t * pgdir, const void *va, int create)
             //PDE doesn't exist.
             if (NO_CREATE == create)
             {
-                cprintf ("PTE doesn't exist and NO_CREATE\n");
+//                cprintf ("PTE doesn't exist and NO_CREATE\n");
                 break;
             }
             if (NIL == (pde_pg = page_alloc (ALLOC_ZERO)))
@@ -558,7 +560,7 @@ pgdir_walk (pde_t * pgdir, const void *va, int create)
     while (FALSE);
 
 
-    return NULL;
+    return NIL;
 }
 
 //
