@@ -112,6 +112,6 @@ kva2page (void *kva)
 }
 
 pte_t *pgdir_walk (pde_t * pgdir, const void *va, int create);
-pte_t *get_kernpgdir();
+pte_t *get_kernpgdir ();
 
 #endif /* !JOS_KERN_PMAP_H */

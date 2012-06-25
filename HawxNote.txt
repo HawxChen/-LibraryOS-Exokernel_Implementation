@@ -22,4 +22,7 @@ Note "Prob:" tag.
 5. what's about the 'size' parameter for?
    env_create (uint8_t * binary, size_t size, enum EnvType type))
        load_icode (struct Env *e, uint8_t * binary, size_t size))
+
 6. why can't I use gdb to browse some variables
+
+7. why did it not have fs/gs?

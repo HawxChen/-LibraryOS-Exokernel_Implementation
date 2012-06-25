@@ -9,6 +9,7 @@
 #include <kern/env.h>
 #include <kern/syscall.h>
 
+extern uint32_t vects[];
 static struct Taskstate ts;
 
 /* For debugging, so print_trapframe can distinguish between printing
@@ -20,7 +21,7 @@ static struct Trapframe *last_tf;
 /* Interrupt descriptor table.  (Must be built at run time because
  * shifted function addresses can't be represented in relocation records.)
  */
-struct Gatedesc idt[256] = { {0} };
+struct Gatedesc idt[IDT_ENTRIES] = { {0} };
 
 struct Pseudodesc idt_pd = {
     sizeof (idt) - 1, (uint32_t) idt
@@ -65,8 +66,18 @@ void
 trap_init (void)
 {
     extern struct Segdesc gdt[];
-
+    uint32_t i;
     // LAB 3: Your code here.
+    for (i = 0; i < IDT_ENTRIES; i++)
+    {
+        SETGATE (idt[i], 0, GD_KT, vects[i], DPL_KERN);
+    }
+
+    /*
+     * Current i is 0x30 = 48. System call entry
+     */
+    SETGATE (idt[i], 1, GD_KT, vects[E_SYSCALL], DPL_USER);
+
 
     // Per-CPU setup 
     trap_init_percpu ();
@@ -146,6 +157,17 @@ trap_dispatch (struct Trapframe *tf)
 {
     // Handle processor exceptions.
     // LAB 3: Your code here.
+    if(T_SYSCALL == tf->tf_trapno)
+    {
+
+    }
+    switch(tf->tf_trapno)
+    {
+        case T_PGFLT:
+            break;
+        default:
+            break;
+    }
 
     // Unexpected trap: The user process or the kernel has a bug.
     print_trapframe (tf);

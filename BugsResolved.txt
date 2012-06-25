@@ -19,11 +19,11 @@
     B. lcr3's right setup posistion!
         Before the time that all the memory you want to chage!
 
-    3. stack's growth direction
-       memset((void*)(e->env_tf.tf_esp - PGSIZE),0 ,PGSIZE);)))
-       Error : e->env_tf.tf_esp = USTACKTOP-PGSIZE;
-       Right : e->env_tf.tf_esp = USTACKTOP;
-       push : esp = esp - 4
-       pop : esp = esp + 4
+3. stack's growth direction
+    memset((void*)(e->env_tf.tf_esp - PGSIZE),0 ,PGSIZE);)))
+    Error : e->env_tf.tf_esp = USTACKTOP-PGSIZE;
+    Right : e->env_tf.tf_esp = USTACKTOP;
+    push : esp = esp - 4
+    pop : esp = esp + 4
        
     

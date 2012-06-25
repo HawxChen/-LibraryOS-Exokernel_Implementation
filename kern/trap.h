@@ -10,6 +10,8 @@
 #include <inc/mmu.h>
 
 /* The kernel's interrupt descriptor table */
+#define IDT_ENTRIES 256
+#define E_SYSCALL 0x30
 extern struct Gatedesc idt[];
 extern struct Pseudodesc idt_pd;
 

@@ -49,7 +49,7 @@ struct Segdesc gdt[] = {
 
     // 0x20 - user data segment
     [GD_UD >> 3] = SEG (STA_W, 0x0, 0xffffffff, 3),
-
+                                                                                         
     // 0x28 - tss, initialized in trap_init_percpu()
     [GD_TSS0 >> 3] = SEG_NULL
 };
@@ -120,14 +120,14 @@ env_init (void)
     // Set up envs array
     // LAB 3: Your code here.
     unsigned int i = 0;
-    memset((void*)envs, 0, NENV * sizeof(struct Env));
+    memset ((void *) envs, 0, NENV * sizeof (struct Env));
 
     env_free_list = &envs[0];
-    for(i = 1; i < NENV; i++)
+    for (i = 1; i < NENV; i++)
     {
-        envs[i-1].env_link = &envs[i];
+        envs[i - 1].env_link = &envs[i];
     }
-    envs[NENV-1].env_link =  NIL;
+    envs[NENV - 1].env_link = NIL;
 
     // Per-CPU part of the initialization
     env_init_percpu ();
@@ -170,9 +170,9 @@ env_setup_vm (struct Env *e)
 {
     int i;
     struct Page *p = NIL;
-    pte_t* kern_pgdir = NIL;
-    pte_t* ori_pte = NIL;
-    pte_t* dst_pte = NIL;
+    pte_t *kern_pgdir = NIL;
+    pte_t *ori_pte = NIL;
+    pte_t *dst_pte = NIL;
 
     // Allocate a page for the page directory
     if (!(p = page_alloc (ALLOC_ZERO)))
@@ -199,33 +199,35 @@ env_setup_vm (struct Env *e)
     /*Hawx: We use the kern_pgdir as the template. 
      *      Just only for memory above UTOP.
      */
-#if 0    
-    memcpy(((void*)page2kva(p)) + PDX(UTOP)/*Pointer Add*/,
-            (void*)(get_kernpgdir() + PDX(UTOP))/*Pointer Add*/,
-            PGSIZE - PDX(UTOP)*4/*Integer Add*/);
+#if 0
+    memcpy (((void *) page2kva (p)) + PDX (UTOP) /*Pointer Add */ ,
+            (void *) (get_kernpgdir () + PDX (UTOP)) /*Pointer Add */ ,
+            PGSIZE - PDX (UTOP) * 4 /*Integer Add */ );
 #endif
-    e->env_pgdir = page2kva(p); 
-    kern_pgdir = get_kernpgdir();
-    memmove(e->env_pgdir, kern_pgdir, PGSIZE);
-    p->pp_ref ++;
-#if 0  
-    for(i = PDX(UTOP); i < NPDENTRIES ;i++)
+    e->env_pgdir = page2kva (p);
+    kern_pgdir = get_kernpgdir ();
+    memmove (e->env_pgdir, kern_pgdir, PGSIZE);
+    p->pp_ref++;
+#if 0
+    for (i = PDX (UTOP); i < NPDENTRIES; i++)
     {
-        if( NIL == (ori_pte = pgdir_walk(kern_pgdir,(void*) (i * PGSIZE), NO_CREATE)))
+        if (NIL ==
+            (ori_pte =
+             pgdir_walk (kern_pgdir, (void *) (i * PGSIZE), NO_CREATE)))
             continue;
-        cprintf("-%d-\n",i);
-        dst_pte = pgdir_walk(e->env_pgdir,(void*)(i*PGSIZE),CREATE);
+        cprintf ("-%d-\n", i);
+        dst_pte = pgdir_walk (e->env_pgdir, (void *) (i * PGSIZE), CREATE);
         *dst_pte = *ori_pte;
 
     }
 #endif
-    
+
 
     /*
      *Hawx: assumption: User process does't share the page table!
      *      Think: If fork?...
      */
-    assert(p->pp_ref == 1);
+    assert (p->pp_ref == 1);
 
     // UVPT maps the env's own page table read-only.
     // Permissions: kernel R, user R
@@ -285,7 +287,8 @@ env_alloc (struct Env **newenv_store, envid_t parent_id)
     e->env_tf.tf_ds = GD_UD | 3;
     e->env_tf.tf_es = GD_UD | 3;
     e->env_tf.tf_ss = GD_UD | 3;
-    e->env_tf.tf_esp = USTACKTOP;/*Prob. Why does in load_icode's instruction mean tf_esp = USTACKTOP - PGSIZE*/
+    e->env_tf.tf_esp = USTACKTOP;   
+    /*Prob. Why does in load_icode's instruction mean tf_esp = USTACKTOP - PGSIZE */
     e->env_tf.tf_cs = GD_UT | 3;
     // You will set e->env_tf.tf_eip later.
 
@@ -304,8 +307,8 @@ env_alloc (struct Env **newenv_store, envid_t parent_id)
 // Pages should be writable by user and kernel.
 // Panic if any allocation attempt fails.
 //
-pte_t*
-region_alloc (struct Env *e, void *va, size_t len)
+pte_t *
+region_alloc (struct Env * e, void *va, size_t len)
 {
     // LAB 3: Your code here.
     // (But only if you need it for load_icode.)
@@ -320,31 +323,32 @@ region_alloc (struct Env *e, void *va, size_t len)
      *                    len cross two pages?
      *       It could reference allocuvm at xv6
      */
-    struct Page* p = NIL;
+    struct Page *p = NIL;
     uint32_t rdown_va = 0;
     uint32_t dstoft = 0;
-    dstoft = ((uint32_t)(va)) + len;
+    dstoft = ((uint32_t) (va)) + len;
     /*
-    Prob: But What's about UVPT for?
+       Prob: But What's about UVPT for?
      */
-    if(UTOP <= ROUNDUP(dstoft, PGSIZE) + len)
+    if (UTOP <= ROUNDUP (dstoft, PGSIZE))
     {
-        panic("Fatal UTOP <= ROUNUP( ((uint32_t)(va)) + len)");
+        panic ("Fatal UTOP <= ROUNUP( ((uint32_t)(va)) + len)");
     }
-    rdown_va = (uint32_t)ROUNDDOWN(va, PGSIZE);
+    rdown_va = (uint32_t) ROUNDDOWN (va, PGSIZE);
     //for(;rdown_va < rup_dstoft; rdown_va += PGSIZE)
-    for(;rdown_va < dstoft; rdown_va += PGSIZE)
+    for (; rdown_va <= dstoft; rdown_va += PGSIZE)
     {
-        p = page_alloc(FALSE);
-        if(NIL == p)
+        p = page_alloc (FALSE);
+        if (NIL == p)
         {
-            panic("region_alloc: failed at page_alloc\n");
+            panic ("region_alloc: failed at page_alloc\n");
             return NIL;
         }
-        page_insert(e->env_pgdir, p, (void*)rdown_va, PTE_U | PTE_P | PTE_W);
+        page_insert (e->env_pgdir, p, (void *) rdown_va,
+                     PTE_U | PTE_P | PTE_W);
     }
     //the first pte!
-    return pgdir_walk(e->env_pgdir,va, NO_CREATE);
+    return pgdir_walk (e->env_pgdir, va, NO_CREATE);
 }
 
 //
@@ -410,54 +414,57 @@ load_icode (struct Env *e, uint8_t * binary, size_t size)
 
     // LAB 3: Your code here.
     /*Hawx: Job List
-     Read Binary ELF's each prog seg into each virtual page.
-        filesz/memsz/offset
-        clear non-needed residual space as zero.
-     Setup privilege.
-     Setup Entry point
-     Setup Stack 
+       Read Binary ELF's each prog seg into each virtual page.
+       filesz/memsz/offset
+       clear non-needed residual space as zero.
+       Setup privilege.
+       Setup Entry point
+       Setup Stack 
      */
     struct Proghdr *ph = NIL;
-    struct Elf *elf = (struct Elf*)binary;
+    struct Elf *elf = (struct Elf *) binary;
     uint32_t i = 0;
-    pte_t* pte = NIL;
-    if(ELF_MAGIC != elf->e_magic)
+    pte_t *pte = NIL;
+    if (ELF_MAGIC != elf->e_magic)
     {
-        cprintf("Error File header\n");
+        cprintf ("Error File header\n");
         return;
     }
-    ph = (struct Proghdr*) ((uint8_t*) binary + elf->e_phoff);
-    lcr3(PADDR(e->env_pgdir));
-    for(i = 0; i < elf->e_phnum; i++, ph++)
+    ph = (struct Proghdr *) ((uint8_t *) binary + elf->e_phoff);
+    lcr3 (PADDR (e->env_pgdir));
+    for (i = 0; i < elf->e_phnum; i++, ph++)
     {
-        if(ph->p_type != ELF_PROG_LOAD)
+        if (ph->p_type != ELF_PROG_LOAD)
             continue;
-        if(ph->p_filesz > ph->p_memsz)
+        if (ph->p_filesz > ph->p_memsz)
         {
-            panic("ph->p_filesz > ph->p_memsz\n");
+            panic ("ph->p_filesz > ph->p_memsz\n");
             return;
         }
-        
-        region_alloc(e, (void*)ph->p_va, ph->p_memsz);
-        memmove((void*)ph->p_va, (void*)(binary + ph->p_offset), ph->p_filesz);
-        memset((void*)(ph->p_va+ph->p_filesz),0, ph->p_memsz - ph->p_filesz);
+
+        region_alloc (e, (void *) ph->p_va, ph->p_memsz);
+        memmove ((void *) ph->p_va, (void *) (binary + ph->p_offset),
+                 ph->p_filesz);
+        memset ((void *) (ph->p_va + ph->p_filesz), 0,
+                ph->p_memsz - ph->p_filesz);
     }
 
     //Setup stack;
-    if(NIL == (pte = region_alloc(e,(void*)(USTACKTOP-PGSIZE),PGSIZE)))
+    if (NIL ==
+        (pte = region_alloc (e, (void *) (USTACKTOP - PGSIZE), PGSIZE)))
     {
-        panic("pte not found!?\n");
-        return ;
+        panic ("pte not found!?\n");
+        return;
     }
-    /*Be careful about stack over usage.*/
-    //e->env_tf.tf_esp = USTACKTOP-PGSIZE; 
-    memset((void*)(e->env_tf.tf_esp - PGSIZE),0 ,PGSIZE);
+    /*Be careful about stack over usage. */
+    //e->env_tf.tf_esp = USTACKTOP; 
+    memset ((void *) (e->env_tf.tf_esp - PGSIZE), 0, PGSIZE);
 
     //Setup entry point
     e->env_tf.tf_eip = elf->e_entry;
 
     //Prob. Corresponding to env.h's problem         
-    lcr3(PADDR(get_kernpgdir()));
+    lcr3 (PADDR (get_kernpgdir ()));
 
 }
 
@@ -480,12 +487,12 @@ env_create (uint8_t * binary, size_t size, enum EnvType type)
      *      4.parent id is zero.
      */
     struct Env *e = NIL;
-    env_alloc(&e, 0);
-    load_icode(e, binary, size);
+    env_alloc (&e, 0);
+    load_icode (e, binary, size);
     e->env_type = type;
 
     //parent_id is set actually by env_alloc.
-    e->env_parent_id =  0;
+    e->env_parent_id = 0;
 }
 
 //
@@ -501,6 +508,9 @@ env_free (struct Env *e)
     // If freeing the current environment, switch to kern_pgdir
     // before freeing the page directory, just in case the page
     // gets reused.
+    /*
+     * UPAGES space is already mapped.
+     */
     if (e == curenv)
         lcr3 (PADDR (kern_pgdir));
 
@@ -515,10 +525,19 @@ env_free (struct Env *e)
 
         // only look at mapped page tables
         if (!(e->env_pgdir[pdeno] & PTE_P))
-            continue;
+                        continue;
 
         // find the pa and va of the page table
         pa = PTE_ADDR (e->env_pgdir[pdeno]);
+        /*
+        Prob:
+         * Why Virtual ?!
+         * Ans: 
+         *      0. Currently, it is protected mode now.
+         *      1. Link to the KERNBASE
+         *      2. boot_map_region : map phy:0 to vir:KERNBASE
+         *                           doesn't map anything to  vir: 0
+         */
         pt = (pte_t *) KADDR (pa);
 
         // unmap all PTEs in this page table
@@ -600,9 +619,9 @@ env_run (struct Env *e)
 
     // LAB 3: Your code here.
 
-    if(NIL != curenv)
+    if (NIL != curenv)
     {
-        if(ENV_RUNNING == curenv->env_type)
+        if (ENV_RUNNING == curenv->env_type)
             curenv->env_type = ENV_RUNNABLE;
         /*Hawx:
          *Other state could be in- like: waiting for I/O so as to be ENV_NOT_RUNNABLE
@@ -611,8 +630,8 @@ env_run (struct Env *e)
     curenv = e;
     curenv->env_type = ENV_RUNNING;
     curenv->env_runs++;
-    lcr3(PADDR(curenv->env_pgdir));
-    env_pop_tf(& curenv->env_tf);
+    lcr3 (PADDR (curenv->env_pgdir));
+    env_pop_tf (&curenv->env_tf);
 
     panic ("env_run not yet implemented");
 }

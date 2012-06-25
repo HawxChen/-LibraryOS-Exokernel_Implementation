@@ -30,7 +30,7 @@ static struct Page *page_free_list; // Free list of physical pages
 static struct Page *tail_free_page; // Free list of physical pages
 
 //Env varaiables declaration.
-extern struct Env* envs;
+extern struct Env *envs;
 
 
 // --------------------------------------------------------------
@@ -183,10 +183,12 @@ boot_alloc (uint32_t n)
 //
 // From UTOP to ULIM, the user is allowed to read but not write.
 // Above ULIM the user cannot read or write.
-pte_t* get_kernpgdir()
+pte_t *
+get_kernpgdir ()
 {
     return kern_pgdir;
 }
+
 void
 mem_init (void)
 {
@@ -225,7 +227,7 @@ mem_init (void)
 
     // Your code goes here:
     pages = (struct Page *) boot_alloc (sizeof (struct Page) * npages);
-    envs = (struct Env *) boot_alloc(sizeof(struct Env) * NENV);
+    envs = (struct Env *) boot_alloc (sizeof (struct Env) * NENV);
 
 
 
@@ -253,8 +255,7 @@ mem_init (void)
 
     // Your code goes here:
     boot_map_region (kern_pgdir, (uintptr_t) UPAGES,
-                     npages * sizeof (struct Page),
-                     PADDR (pages), PTE_U);
+                     npages * sizeof (struct Page), PADDR (pages), PTE_U);
 
     //////////////////////////////////////////////////////////////////////
     // Use the physical memory that 'bootstack' refers to as the kernel
@@ -301,9 +302,8 @@ mem_init (void)
        Map the envs to UENVS(UTOP)
      */
     boot_map_region (kern_pgdir,
-            (uintptr_t) UENVS,
-            NENV * sizeof(struct Env),
-            PADDR(envs), PTE_U);
+                     (uintptr_t) UENVS,
+                     NENV * sizeof (struct Env), PADDR (envs), PTE_U);
     // Check that the initial page directory has been set up correctly.
     check_kern_pgdir ();
 
@@ -510,7 +510,7 @@ pte_t *
 pgdir_walk (pde_t * pgdir, const void *va, int create)
 {
     physaddr_t pa = 0;
-    pte_t* pgtable = NIL;
+    pte_t *pgtable = NIL;
     struct Page *pde_pg;
     do
     {
@@ -538,9 +538,9 @@ pgdir_walk (pde_t * pgdir, const void *va, int create)
 #ifndef __PT_REF__
             pde_pg->pp_ref++;
 #endif
-            pgdir[PDX (va)] = page2pa(pde_pg) | PTE_P | PTE_W;
+            pgdir[PDX (va)] = page2pa (pde_pg) | PTE_P | PTE_W;
         }
-        pgtable = page2kva(pde_pg);
+        pgtable = page2kva (pde_pg);
 
         //PDE exist now.
         /*Why
@@ -555,7 +555,7 @@ pgdir_walk (pde_t * pgdir, const void *va, int create)
            0x1000: 0x00000000
          */
 //        return ((( (pde_pg->paddr)) + PTX (va)));
-        return  &pgtable[PTX(va)];//((pte_t *) KADDR (pde_pg->paddr)) + PTX (va);
+        return &pgtable[PTX (va)];  //((pte_t *) KADDR (pde_pg->paddr)) + PTX (va);
     }
     while (FALSE);
 
@@ -675,16 +675,16 @@ page_insert (pde_t * pgdir, struct Page *pp, void *va, int perm)
         {
             page_remove (pgdir, va);
 #ifdef __PT_REF__
-        /* Issue No.01 fixed!
-         *This line has the bug!
-         *pa-A replace the va-X slot occupied by pa-B.
-         *Page table's count to use doesn't increase.
-         *Before: va-X slot owns pa-B. count --.
-         *After : va-X slot owns pa-A. count ++.
-         *doen't change.
-         *If the va slot had one page to use, then it should decrease the count for 1.
-         */
-        pa2page (PDE_ADDR (pgdir[PDX (va)]))->pp_ref--;
+            /* Issue No.01 fixed!
+             *This line has the bug!
+             *pa-A replace the va-X slot occupied by pa-B.
+             *Page table's count to use doesn't increase.
+             *Before: va-X slot owns pa-B. count --.
+             *After : va-X slot owns pa-A. count ++.
+             *doen't change.
+             *If the va slot had one page to use, then it should decrease the count for 1.
+             */
+            pa2page (PDE_ADDR (pgdir[PDX (va)]))->pp_ref--;
 #endif
         }
     }
@@ -1029,7 +1029,7 @@ check_kern_pgdir (void)
         case PDX (UVPT):
         case PDX (KSTACKTOP - 1):
         case PDX (UPAGES):
-        case PDX(UENVS):
+        case PDX (UENVS):
             assert (pgdir[i] & PTE_P);
             break;
         default:
