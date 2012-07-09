@@ -269,6 +269,9 @@ struct Gatedesc
 //        this interrupt/trap gate explicitly using an int instruction.
 #define DPL_KERN 0x1
 #define DPL_USER 0x3
+#define TRAP_Y   0x1
+#define TRAP_N   0x0
+
 #define SETGATE(gate, istrap, sel, off, dpl)			\
 {								\
 	(gate).gd_off_15_0 = (uint32_t) (off) & 0xffff;		\

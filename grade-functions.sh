@@ -44,6 +44,7 @@ run () {
 		echo $qemucommand 1>&2
 	fi
 
+#t0=`date +%s.%N 2>/dev/null`
 	t=`date +%s.%N 2>/dev/null`
 	(
 		ulimit -t $timeout

@@ -73,10 +73,9 @@ trap_init (void)
         SETGATE (idt[i], 0, GD_KT, vects[i], DPL_KERN);
     }
 
-    /*
-     * Current i is 0x30 = 48. System call entry
-     */
-    SETGATE (idt[i], 1, GD_KT, vects[E_SYSCALL], DPL_USER);
+    SETGATE (idt[T_SYSCALL], TRAP_Y, GD_KT, vects[T_SYSCALL], DPL_USER);
+
+    SETGATE (idt[T_BRKPT], TRAP_Y, GD_KT, vects[T_BRKPT], DPL_USER);
 
 
     // Per-CPU setup 
@@ -152,32 +151,42 @@ print_regs (struct PushRegs *regs)
     cprintf ("  eax  0x%08x\n", regs->reg_eax);
 }
 
+#define XARG_SYSCALL_PRAR(_regPara) tf->tf_regs._regPara
 static void
 trap_dispatch (struct Trapframe *tf)
 {
     // Handle processor exceptions.
     // LAB 3: Your code here.
-    if(T_SYSCALL == tf->tf_trapno)
+    switch (tf->tf_trapno)
     {
+    case T_PGFLT:
+        page_fault_handler (tf);
+        break;
+    case T_BRKPT:
+        breakpoint_handler (tf);
+        break;
+    case T_SYSCALL:
+        //Extract the parameters
+        syscall(XARG_SYSCALL_PRAR(reg_eax),
+                XARG_SYSCALL_PRAR(reg_edx),
+                XARG_SYSCALL_PRAR(reg_ecx),
+                XARG_SYSCALL_PRAR(reg_ebx),
+                XARG_SYSCALL_PRAR(reg_edi),
+                XARG_SYSCALL_PRAR(reg_esi));
+        break;
+    default:
+        // Unexpected trap: The user process or the kernel has a bug.
+        print_trapframe (tf);
+        if (tf->tf_cs == GD_KT)
+            panic ("unhandled trap in kernel");
+        else
+        {
+            env_destroy (curenv);
+            return;
+        }
+        break;
+    }
 
-    }
-    switch(tf->tf_trapno)
-    {
-        case T_PGFLT:
-            break;
-        default:
-            break;
-    }
-
-    // Unexpected trap: The user process or the kernel has a bug.
-    print_trapframe (tf);
-    if (tf->tf_cs == GD_KT)
-        panic ("unhandled trap in kernel");
-    else
-    {
-        env_destroy (curenv);
-        return;
-    }
 }
 
 void
@@ -218,18 +227,60 @@ trap (struct Trapframe *tf)
     env_run (curenv);
 }
 
+void
+breakpoint_handler (struct Trapframe *tf)
+{
+    monitor (tf);
+    return;
+}
 
 void
 page_fault_handler (struct Trapframe *tf)
 {
     uint32_t fault_va;
+    pte_t *pte;
 
     // Read processor's CR2 register to find the faulting address
     fault_va = rcr2 ();
+    /*
+       cr2 is to find the faulting address
+       error code has some useful information
+     */
 
     // Handle kernel-mode page faults.
+    if ((SEL_PL (tf->tf_cs)) == 0x00)
+    {
+        panic ("=== Page fault at kernel ===");
+    }
 
     // LAB 3: Your code here.
+    if (PTE_P &
+        ERC_P (pte =
+               pgdir_walk (curenv->env_pgdir, (void *) fault_va, NO_CREATE)))
+    {
+        do
+        {
+            //user mode can do?
+            if (!(PTE_U & ERC_US (pte)))
+            {
+                break;
+            }
+
+            //Writable?
+            if (!(PTE_W & ERC_WR (pte)))
+            {
+                break;
+            }
+        }
+        while (0);
+    }
+    else
+    {
+        //Allocate the new one?
+        //if it wants to do allocation,
+        //then it must check the slot matched perm or not?
+        //return;
+    }
 
     // We've already handled kernel-mode exceptions, so if we get here,
     // the page fault happened in user mode.

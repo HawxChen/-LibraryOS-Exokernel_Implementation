@@ -49,7 +49,7 @@ struct Segdesc gdt[] = {
 
     // 0x20 - user data segment
     [GD_UD >> 3] = SEG (STA_W, 0x0, 0xffffffff, 3),
-                                                                                         
+
     // 0x28 - tss, initialized in trap_init_percpu()
     [GD_TSS0 >> 3] = SEG_NULL
 };
@@ -287,7 +287,7 @@ env_alloc (struct Env **newenv_store, envid_t parent_id)
     e->env_tf.tf_ds = GD_UD | 3;
     e->env_tf.tf_es = GD_UD | 3;
     e->env_tf.tf_ss = GD_UD | 3;
-    e->env_tf.tf_esp = USTACKTOP;   
+    e->env_tf.tf_esp = USTACKTOP;
     /*Prob. Why does in load_icode's instruction mean tf_esp = USTACKTOP - PGSIZE */
     e->env_tf.tf_cs = GD_UT | 3;
     // You will set e->env_tf.tf_eip later.
@@ -525,18 +525,18 @@ env_free (struct Env *e)
 
         // only look at mapped page tables
         if (!(e->env_pgdir[pdeno] & PTE_P))
-                        continue;
+            continue;
 
         // find the pa and va of the page table
         pa = PTE_ADDR (e->env_pgdir[pdeno]);
         /*
-        Prob:
-         * Why Virtual ?!
-         * Ans: 
-         *      0. Currently, it is protected mode now.
-         *      1. Link to the KERNBASE
-         *      2. boot_map_region : map phy:0 to vir:KERNBASE
-         *                           doesn't map anything to  vir: 0
+           Prob:
+           * Why Virtual ?!
+           * Ans: 
+           *      0. Currently, it is protected mode now.
+           *      1. Link to the KERNBASE
+           *      2. boot_map_region : map phy:0 to vir:KERNBASE
+           *                           doesn't map anything to  vir: 0
          */
         pt = (pte_t *) KADDR (pa);
 

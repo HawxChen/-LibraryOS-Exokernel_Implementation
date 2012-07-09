@@ -26,3 +26,17 @@ Note "Prob:" tag.
 6. why can't I use gdb to browse some variables
 
 7. why did it not have fs/gs?
+
+8. If a page fault is caused by a page-level protection, 
+   the access flag in the page-directory is set when the fault occurs.
+   
+9.Differences about Call Gate/ Trap Gate/ Int Gat /Task Gate 
+  IDT must not contain Call Gate
+  INT Gate will clear IF bit at eflag bit, but Trap Gate won't.
+
+Ongoing:
+    syscall at lib/syscall.c
+        -E_INVAL
+    kern/trapentry.S,
+    trap_init at kern/trap.c
+
