@@ -167,12 +167,12 @@ trap_dispatch (struct Trapframe *tf)
         break;
     case T_SYSCALL:
         //Extract the parameters
-        syscall(XARG_SYSCALL_PRAR(reg_eax),
-                XARG_SYSCALL_PRAR(reg_edx),
-                XARG_SYSCALL_PRAR(reg_ecx),
-                XARG_SYSCALL_PRAR(reg_ebx),
-                XARG_SYSCALL_PRAR(reg_edi),
-                XARG_SYSCALL_PRAR(reg_esi));
+        XARG_SYSCALL_PRAR (reg_eax) = syscall (XARG_SYSCALL_PRAR (reg_eax),
+                                               XARG_SYSCALL_PRAR (reg_edx),
+                                               XARG_SYSCALL_PRAR (reg_ecx),
+                                               XARG_SYSCALL_PRAR (reg_ebx),
+                                               XARG_SYSCALL_PRAR (reg_edi),
+                                               XARG_SYSCALL_PRAR (reg_esi));
         break;
     default:
         // Unexpected trap: The user process or the kernel has a bug.
@@ -238,7 +238,7 @@ void
 page_fault_handler (struct Trapframe *tf)
 {
     uint32_t fault_va;
-    pte_t *pte;
+    pte_t *ptep;
 
     // Read processor's CR2 register to find the faulting address
     fault_va = rcr2 ();
@@ -252,22 +252,27 @@ page_fault_handler (struct Trapframe *tf)
     {
         panic ("=== Page fault at kernel ===");
     }
-
+    ptep = pgdir_walk (curenv->env_pgdir, (void *) fault_va, NO_CREATE);
     // LAB 3: Your code here.
-    if (PTE_P &
-        ERC_P (pte =
-               pgdir_walk (curenv->env_pgdir, (void *) fault_va, NO_CREATE)))
+
+    /*
+       if(0xeec00048 == fault_va)
+       {
+       cprintf ("*ptep:0x%x\n",*ptep);
+       }
+     */
+    if (PTE_P & *ptep)
     {
         do
         {
             //user mode can do?
-            if (!(PTE_U & ERC_US (pte)))
+            if (!(PTE_U & *ptep))
             {
                 break;
             }
 
             //Writable?
-            if (!(PTE_W & ERC_WR (pte)))
+            if (!(PTE_W & *ptep))
             {
                 break;
             }
@@ -288,6 +293,8 @@ page_fault_handler (struct Trapframe *tf)
     // Destroy the environment that caused the fault.
     cprintf ("[%08x] user fault va %08x ip %08x\n",
              curenv->env_id, fault_va, tf->tf_eip);
+    cprintf ("[curenv_addr:%08x] env_id_addr: 0x%x,ip %08x\n",
+             curenv, (uint32_t) & curenv->env_id, tf->tf_eip);
     print_trapframe (tf);
     env_destroy (curenv);
 }

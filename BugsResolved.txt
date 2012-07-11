@@ -26,4 +26,5 @@
     push : esp = esp - 4
     pop : esp = esp + 4
        
-    
+4. boot_map_region
+    It should at least have the permissions that lower lever PTE has.

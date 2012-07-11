@@ -539,6 +539,8 @@ pgdir_walk (pde_t * pgdir, const void *va, int create)
             pde_pg->pp_ref++;
 #endif
             pgdir[PDX (va)] = page2pa (pde_pg) | PTE_P | PTE_W;
+            //Dangerous!          
+            //pgdir[PDX (va)] = page2pa (pde_pg) | PTE_P | PTE_W | PTE_U;
         }
         pgtable = page2kva (pde_pg);
 
@@ -580,12 +582,21 @@ boot_map_region (pde_t * pgdir, uintptr_t va, size_t size, physaddr_t pa,
     uint32_t i;
     pte_t *ptep = NIL;
 
+    cprintf ("va:0x%x,size:%d,pa:0x%x\n", va, size, pa);
     size = ROUNDUP (size, PGSIZE);
     for (i = 0; i < size; i += PGSIZE)
     {
         ptep = pgdir_walk (pgdir, (void *) (va + i), CREATE);
         assert (NIL != ptep);
         *ptep = PTE_ADDR (pa + i) | perm | PTE_P;
+
+        /*
+         * Bug Resolved: "4" 
+         */
+        if ((PTE_U & perm) && !(PTE_U & pgdir[PDX (va + i)]))
+        {
+            pgdir[PDX (va + i)] |= PTE_U;
+        }
     }
 
 }
@@ -814,11 +825,65 @@ static uintptr_t user_mem_check_addr;
 // Returns 0 if the user program can access this range of addresses,
 // and -E_FAULT otherwise.
 //
+#define JUDGE_CHECK_PERM(_slot,_perm) ((_perm) == ((_perm) & (_slot)) )
 int
 user_mem_check (struct Env *env, const void *va, size_t len, int perm)
 {
     // LAB 3: Your code here.
+    uint32_t len_cnt = 0;
+    pte_t *pte_p = NIL;
+    uint32_t check_perm = perm | PTE_P;
+    uint32_t va_cnt = (uint32_t) va;
+    size_t iterate_len = len;
+    do
+    {
+        
+        if (va_cnt >= ULIM)
+        {
+            goto ERROR_RET;
+        }
+        
 
+        pte_p = pgdir_walk (env->env_pgdir, (void *) va_cnt, NO_CREATE);
+        
+        if (NIL == pte_p)
+        {
+            cprintf ("=== NIL ===\n");
+            goto ERROR_RET;
+        }
+        
+        
+        cprintf("va_cnt:0x%x,va+len:0x%x, pte_p:0x%x\n"
+                ,va_cnt,(uint32_t)va +len,(uint32_t)pte_p);
+                
+        if (!JUDGE_CHECK_PERM (*pte_p, check_perm))
+        {
+            cprintf ("env_pgdir:0x%x,pte_p:0x%x,*pte:0x%x\n",env->env_pgdir,
+                    (uint32_t)pte_p,*pte_p);
+            goto ERROR_RET;
+        }
+
+        if (iterate_len < PGSIZE)
+        {
+            //Boundary condition
+            va_cnt += iterate_len;
+        }
+        else
+        {
+            va_cnt += PGSIZE;
+            iterate_len -= PGSIZE;
+        }
+    }
+    while (va_cnt <= ((uint32_t) va + len));
+
+    goto SUCCESS_RET;
+
+ERROR_RET:
+    //Match the grade script...
+    user_mem_check_addr = (iterate_len == len) ? (uint32_t)va : ROUNDDOWN(va_cnt,PGSIZE);
+    return -E_FAULT;
+
+SUCCESS_RET:
     return 0;
 }
 

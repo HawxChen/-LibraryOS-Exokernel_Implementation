@@ -621,14 +621,14 @@ env_run (struct Env *e)
 
     if (NIL != curenv)
     {
-        if (ENV_RUNNING == curenv->env_type)
-            curenv->env_type = ENV_RUNNABLE;
+        if (ENV_RUNNING == curenv->env_status)
+            curenv->env_status = ENV_RUNNABLE;
         /*Hawx:
          *Other state could be in- like: waiting for I/O so as to be ENV_NOT_RUNNABLE
          */
     }
     curenv = e;
-    curenv->env_type = ENV_RUNNING;
+    curenv->env_status = ENV_RUNNING;
     curenv->env_runs++;
     lcr3 (PADDR (curenv->env_pgdir));
     env_pop_tf (&curenv->env_tf);

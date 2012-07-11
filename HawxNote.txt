@@ -34,9 +34,7 @@ Note "Prob:" tag.
   IDT must not contain Call Gate
   INT Gate will clear IF bit at eflag bit, but Trap Gate won't.
 
-Ongoing:
-    syscall at lib/syscall.c
-        -E_INVAL
-    kern/trapentry.S,
-    trap_init at kern/trap.c
-
+10. lib/entry.S
+     // See if we were started with arguments on the stack
+      cmpl $USTACKTOP, %esp
+      jne args_exist
