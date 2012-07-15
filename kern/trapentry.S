@@ -590,4 +590,7 @@ movw %ax, %es
 #Call trap(tf), tf is the current esp, trapframe address pointer,
 pushl %esp
 call trap
-add $4, %esp #Why
+add $4, %esp
+#Why "add $4, %esp"? Just match the following trap return steps.
+#Move the esp to the correct data instance address, so ignore the pointer address by add $4 to esp.
+
