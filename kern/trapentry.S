@@ -590,4 +590,4 @@ movw %ax, %es
 #Call trap(tf), tf is the current esp, trapframe address pointer,
 pushl %esp
 call trap
-#add $4, %esp ????
+add $4, %esp #Why

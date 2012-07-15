@@ -70,12 +70,13 @@ trap_init (void)
     // LAB 3: Your code here.
     for (i = 0; i < IDT_ENTRIES; i++)
     {
-        SETGATE (idt[i], 0, GD_KT, vects[i], DPL_KERN);
+        SETGATE (idt[i], TRAP_N, GD_KT, vects[i], DPL_KERN);
     }
 
     SETGATE (idt[T_SYSCALL], TRAP_Y, GD_KT, vects[T_SYSCALL], DPL_USER);
 
     SETGATE (idt[T_BRKPT], TRAP_Y, GD_KT, vects[T_BRKPT], DPL_USER);
+
 
 
     // Per-CPU setup 
@@ -250,6 +251,7 @@ page_fault_handler (struct Trapframe *tf)
     // Handle kernel-mode page faults.
     if ((SEL_PL (tf->tf_cs)) == 0x00)
     {
+        print_trapframe (tf);
         panic ("=== Page fault at kernel ===");
     }
     ptep = pgdir_walk (curenv->env_pgdir, (void *) fault_va, NO_CREATE);

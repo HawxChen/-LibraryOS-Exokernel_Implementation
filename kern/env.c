@@ -125,6 +125,7 @@ env_init (void)
     env_free_list = &envs[0];
     for (i = 1; i < NENV; i++)
     {
+        envs[i - 1].env_type = ENV_TYPE_IDLE;
         envs[i - 1].env_link = &envs[i];
     }
     envs[NENV - 1].env_link = NIL;
@@ -326,17 +327,29 @@ region_alloc (struct Env * e, void *va, size_t len)
     struct Page *p = NIL;
     uint32_t rdown_va = 0;
     uint32_t dstoft = 0;
+#if 0 //Bug Code
     dstoft = ((uint32_t) (va)) + len;
     /*
-       Prob: But What's about UVPT for?
+Prob: But What's about UVPT for?
      */
     if (UTOP <= ROUNDUP (dstoft, PGSIZE))
     {
         panic ("Fatal UTOP <= ROUNUP( ((uint32_t)(va)) + len)");
     }
     rdown_va = (uint32_t) ROUNDDOWN (va, PGSIZE);
-    //for(;rdown_va < rup_dstoft; rdown_va += PGSIZE)
     for (; rdown_va <= dstoft; rdown_va += PGSIZE)
+#else
+        dstoft = ROUNDUP (((uint32_t) (va)) + len,PGSIZE);
+    /*
+Prob: But What's about UVPT for?
+     */
+    if (UTOP <= dstoft)
+    {
+        panic ("Fatal UTOP <= ROUNUP( ((uint32_t)(va)) + len)");
+    }
+    rdown_va = (uint32_t) ROUNDDOWN (va, PGSIZE);
+    for (; rdown_va < dstoft; rdown_va += PGSIZE)
+#endif
     {
         p = page_alloc (FALSE);
         if (NIL == p)
@@ -424,7 +437,6 @@ load_icode (struct Env *e, uint8_t * binary, size_t size)
     struct Proghdr *ph = NIL;
     struct Elf *elf = (struct Elf *) binary;
     uint32_t i = 0;
-    pte_t *pte = NIL;
     if (ELF_MAGIC != elf->e_magic)
     {
         cprintf ("Error File header\n");
@@ -450,10 +462,9 @@ load_icode (struct Env *e, uint8_t * binary, size_t size)
     }
 
     //Setup stack;
-    if (NIL ==
-        (pte = region_alloc (e, (void *) (USTACKTOP - PGSIZE), PGSIZE)))
+    if (NIL == region_alloc (e, (void *) (USTACKTOP - PGSIZE), PGSIZE))
     {
-        panic ("pte not found!?\n");
+        panic ("Not Found!?\n");
         return;
     }
     /*Be careful about stack over usage. */
@@ -487,7 +498,11 @@ env_create (uint8_t * binary, size_t size, enum EnvType type)
      *      4.parent id is zero.
      */
     struct Env *e = NIL;
-    env_alloc (&e, 0);
+    if (0 > env_alloc (&e, 0))
+    {
+        panic ("env creation is failed!");
+        return;
+    }
     load_icode (e, binary, size);
     e->env_type = type;
 

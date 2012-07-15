@@ -78,7 +78,6 @@ int
 mon_backtrace (int argc, char **argv, struct Trapframe *tf)
 {
     // Your code here.
-    int32_t cnt = 0;
     uint32_t *addr = 0;
     char format[FORMAT_LENGTH] = { 0 };
     char formatName[FORMAT_LENGTH] = { 0 };
@@ -88,7 +87,7 @@ mon_backtrace (int argc, char **argv, struct Trapframe *tf)
     addr = (uint32_t *) read_ebp ();
 
     cprintf ("Stack backtrace\n");
-    for (; NULL != addr; cnt++)
+    for (; NULL != addr;)
     {
         cprintf (format, EBP (addr), EIP (addr), ARG (addr, 0), ARG (addr, 1),
                  ARG (addr, 2), ARG (addr, 3), ARG (addr, 4));

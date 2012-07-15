@@ -837,29 +837,29 @@ user_mem_check (struct Env *env, const void *va, size_t len, int perm)
     size_t iterate_len = len;
     do
     {
-        
+
         if (va_cnt >= ULIM)
         {
             goto ERROR_RET;
         }
-        
+
 
         pte_p = pgdir_walk (env->env_pgdir, (void *) va_cnt, NO_CREATE);
-        
+
         if (NIL == pte_p)
         {
             cprintf ("=== NIL ===\n");
             goto ERROR_RET;
         }
-        
-        
-        cprintf("va_cnt:0x%x,va+len:0x%x, pte_p:0x%x\n"
-                ,va_cnt,(uint32_t)va +len,(uint32_t)pte_p);
-                
+
+
+        cprintf ("va_cnt:0x%x,va+len:0x%x, pte_p:0x%x\n", va_cnt,
+                 (uint32_t) va + len, (uint32_t) pte_p);
+
         if (!JUDGE_CHECK_PERM (*pte_p, check_perm))
         {
-            cprintf ("env_pgdir:0x%x,pte_p:0x%x,*pte:0x%x\n",env->env_pgdir,
-                    (uint32_t)pte_p,*pte_p);
+            cprintf ("env_pgdir:0x%x,pte_p:0x%x,*pte:0x%x\n", env->env_pgdir,
+                     (uint32_t) pte_p, *pte_p);
             goto ERROR_RET;
         }
 
@@ -870,20 +870,24 @@ user_mem_check (struct Env *env, const void *va, size_t len, int perm)
         }
         else
         {
-            va_cnt += PGSIZE;
             iterate_len -= PGSIZE;
+            va_cnt += PGSIZE;
         }
     }
-    while (va_cnt <= ((uint32_t) va + len));
+    /*
+        Bug: ((uint32_t) va + len)  it will be the pointer's add.
+     */
+    while (va_cnt <= ((uint32_t) va) + len);
 
     goto SUCCESS_RET;
 
-ERROR_RET:
+  ERROR_RET:
     //Match the grade script...
-    user_mem_check_addr = (iterate_len == len) ? (uint32_t)va : ROUNDDOWN(va_cnt,PGSIZE);
+    user_mem_check_addr =
+        (iterate_len == len) ? (uint32_t) va : ROUNDDOWN (va_cnt, PGSIZE);
     return -E_FAULT;
 
-SUCCESS_RET:
+  SUCCESS_RET:
     return 0;
 }
 

@@ -19,60 +19,11 @@ sys_cputs (const char *s, size_t len)
 {
     // Check that the user has permission to read memory [s, s+len).
     // Destroy the environment if not.
-    size_t iterate_len = len;
-    char *s_cnt = (char *) s;
-    bool flg = FALSE;
 
     // LAB 3: Your code here.
-    user_mem_assert(curenv,(const char *)s,len,PTE_U | PTE_P);
-
-    pte_t *ppte = NIL;
-    do
-    {
-        ppte = pgdir_walk (curenv->env_pgdir, (void *) ROUNDDOWN (s_cnt, PGSIZE),NO_CREATE);
-        if (NIL == ppte)
-        {
-            break;
-        }
-
-        if (!(*ppte & PTE_P))
-        {
-            break;
-        }
-
-        if (!(*ppte & PTE_U))
-        {
-            break;
-        }
-        cprintf ("!!!env_pgdir:0x%x,ppte:0x%x,pte:0x%x,s_cnt:0x%x\n",
-                curenv->env_pgdir,(uint32_t)ppte,*ppte,(uint32_t)s_cnt);
-        // Print the string supplied by the user.
-        if (iterate_len < PGSIZE)
-        {
-            //Boundary condition
-            s_cnt += iterate_len;
-        }
-        else
-        {
-            iterate_len -= PGSIZE;
-            s_cnt += PGSIZE;
-        }
-        cprintf ("%.*s", len, s);
-    // LAB 3: Your code here.
-    //user_mem_assert(curenv,(const char *)s,len,PTE_U | PTE_P);
-        return;
-
-    }
-    while (s_cnt <= (s + len));
-
-    if (NIL != curenv)
-    {
-        env_destroy (curenv);
-    }
-    else
-    {
-        panic ("Serious Error");
-    }
+    user_mem_assert (curenv, (const char *) s, len, PTE_U | PTE_P);
+    cprintf ("%.*s", len, s);
+    return;
 }
 
 // Read a character from the system console without blocking.
