@@ -23,8 +23,10 @@
     memset((void*)(e->env_tf.tf_esp - PGSIZE),0 ,PGSIZE);)))
     Error : e->env_tf.tf_esp = USTACKTOP-PGSIZE;
     Right : e->env_tf.tf_esp = USTACKTOP;
-    push : esp = esp - 4
-    pop : esp = esp + 4
+    push : 
+        esp = esp - 4 //final step
+    pop : 
+        esp = esp + 4 //final step
        
 4. boot_map_region
     It should at least have the permissions that lower lever PTE has.

@@ -23,6 +23,8 @@ static struct Trapframe *last_tf;
  */
 struct Gatedesc idt[IDT_ENTRIES] = { {0} };
 
+extern void *syscall_handler(void);
+//extern void *syscall_handler;
 struct Pseudodesc idt_pd = {
     sizeof (idt) - 1, (uint32_t) idt
 };
@@ -77,10 +79,12 @@ trap_init (void)
 
     SETGATE (idt[T_BRKPT], TRAP_Y, GD_KT, vects[T_BRKPT], DPL_USER);
 
-
-
     // Per-CPU setup 
     trap_init_percpu ();
+
+    wrmsr (MSR_IA32_SYSTEM_CS, GD_KT, 0);
+    wrmsr (MSR_IA32_SYSTEM_ESP, ts.ts_esp0, 0);
+    wrmsr (MSR_IA32_SYSTEM_EIP, (uint32_t)  syscall_handler, 0);
 }
 
 // Initialize and load the per-CPU TSS and IDT
@@ -188,6 +192,17 @@ trap_dispatch (struct Trapframe *tf)
         break;
     }
 
+}
+
+void
+syscall_trap (struct Trapframe *tf)
+{
+    curenv->env_tf = *tf;
+    XARG_SYSCALL_PRAR (reg_eax) = syscall (XARG_SYSCALL_PRAR (reg_eax),
+                                           XARG_SYSCALL_PRAR (reg_edx),
+                                           XARG_SYSCALL_PRAR (reg_ecx),
+                                           XARG_SYSCALL_PRAR (reg_ebx),
+                                           XARG_SYSCALL_PRAR (reg_edi), 0);
 }
 
 void

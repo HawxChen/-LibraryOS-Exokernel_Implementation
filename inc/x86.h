@@ -151,6 +151,18 @@ lidt (void *p)
     __asm __volatile ("lidt (%0)"::"r" (p));
 }
 
+#define rdmsr(msr,val1,val2) \
+	__asm__ __volatile__("rdmsr" \
+	: "=a" (val1), "=d" (val2) \
+	: "c" (msr))
+
+#define wrmsr(msr,val1,val2) \
+	__asm__ __volatile__("wrmsr" \
+	: /* no outputs */ \
+	: "c" (msr), "a" (val1), "d" (val2))
+#define MSR_IA32_SYSTEM_CS (0x174)
+#define MSR_IA32_SYSTEM_ESP (0x175)
+#define MSR_IA32_SYSTEM_EIP (0x176)
 static __inline void
 lgdt (void *p)
 {

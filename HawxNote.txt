@@ -38,3 +38,17 @@ Note "Prob:" tag.
      // See if we were started with arguments on the stack
       cmpl $USTACKTOP, %esp
       jne args_exist
+11. Setup Gate
+    trap_init_percpu
+        setup idt entries
+    trap_init
+        setup  TSS
+        load task_reg
+        load idt table
+
+    env.c
+        struct Segdesc gdt[] = {]
+        }
+12 why
+    26 extern void *syscall_handler(void);
+    27 //extern void *syscall_handler;

@@ -594,3 +594,28 @@ add $4, %esp
 #Why "add $4, %esp"? Just match the following trap return steps.
 #Move the esp to the correct data instance address, so ignore the pointer address by add $4 to esp.
 
+.globl syscall_handler
+.type syscall_handler, @function
+syscall_handler:
+    pushl $(GD_UD)|3
+    pushl %ebp
+    pushfl
+    pushl $(GD_UT)|3
+    pushl %esi
+    pushl $0 #err
+    pushl $0 #trapNO
+    pushl %ds
+    pushl %es
+    pushal 
+    movw $(GD_KD), %ax
+    movw %ax, %ds
+    movw %ax, %es
+    pushl %esp
+    call syscall_trap
+    pop %esp #same as the effect: esp = esp+4
+    popal
+    popl %es
+    popl %ds
+    movl %ebp, %ecx
+    movl %esi, %edx
+    sysexit
