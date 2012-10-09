@@ -8,6 +8,7 @@
 /wget.log
 /slirp.cap
 /qemu.out
+/qemu.log
 /lab?-handin.tar.gz
 /lab?/
 /sol?/
