@@ -591,9 +591,7 @@ movw %ax, %es
 pushl %esp
 call trap
 #add $4, %esp #In JOS, It is not needed here.
-#In xv6:
-#Why "add $4, %esp"? Just match the following trap return steps.
-#Move the esp to the correct data instance address, so ignore the pointer address by add $4 to esp.
+#Reference to http://hawxchen.blogspot.tw/2012/08/trap-returns-esp-to-trap-frame-in-xv6.html
 
 .globl syscall_handler
 .type syscall_handler, @function
