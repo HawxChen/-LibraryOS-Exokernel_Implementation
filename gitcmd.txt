@@ -7,3 +7,9 @@ git branch -a
 git pull mit lab3
 git mergetool -t vim [file]
 http://stackoverflow.com/questions/7438313/pushing-to-git-returning-error-code-403-fatal-http-request-failed
+http://www.mariopareja.com/blog/archive/2010/01/11/how-to-push-a-new-local-branch-to-a-remote.aspx
+    push newly created local branch to remote
+    #git push origin branch_name
+vimdiff
+    git mergetool -t vimdiff [filename]
+    git difftool --tool=vimdiff --no-prompt
