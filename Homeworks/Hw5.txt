@@ -1,0 +1,9 @@
+Submit1:
+    80104b01: acquire's panic
+    8010270d: ideintr's acquire 
+    801063eb: trap's ideintr
+    80106161: alltrap's call trap
+Because It enables the INT by sti(), 
+the atmoic operation should disable the correspondingCPU's INT to avoid same CPU enter the critical section.
+not to disable self processor's INT, as for the next HW INT to cause the likely-locking CPU to cause panic, acquire twice and seem like to success.
+

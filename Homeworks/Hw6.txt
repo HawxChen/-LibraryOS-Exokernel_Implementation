@@ -1,0 +1,40 @@
+submit1:
+    sched: "mostly"" executed on proc->context->kstack
+            why switch to uvm
+                need what varable?
+                what doesn't comment mean?
+                    // Switch to chosen process.  It is the process's job
+                    // to release ptable.lock and then reacquire it
+                    // before jumping back to us.
+
+                Before waking up(From user to kernel), user's memory scope lock something.
+                So unlock's action needed to be executed under user's memory scope.
+
+                In the same way, when sched occured (sleeping : from user to kernel),
+                It also has to switch to kvm.
+
+    scheduler: executed on cpu->scheduler->kstack
+        
+    corutine: scheduler & sched
+
+    When sched calls swtch, does that call to swtch() ever return?
+       It won't return directly. It will return after scheduler pick the coressponding process to run. 
+
+submit2:
+    It could be done in various platform, just refrence wiki.
+    Concrete examples or Argue why not?
+    This Topic is constrained by CPU design.
+
+submit3:
+    Normal pattern as corutine.
+        adcb
+
+    The very first pattern: ac
+        cause:
+            a---- mpmain->scheduler to make first user process run
+            c---- first user process trigger the system call (yield), so print C
+            after that ... follow the adcb pattern
+            
+Discussion:
+    Why switchuvm can access kernel varable?
+        Becase CS is still in kernel permission.

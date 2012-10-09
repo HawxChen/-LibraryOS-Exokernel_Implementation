@@ -1,0 +1,14 @@
+Submit
+    1.no ptable.lock
+    process' condition will be error!
+
+    2.no idelock
+        iderw(1) Read        iderw(2) Write
+        |                    |
+        |                    b->qnext = 0
+        b->qnext = 0;        |
+        |                    |
+        idestart()           |
+        |                    |
+                            idestart();
+        
