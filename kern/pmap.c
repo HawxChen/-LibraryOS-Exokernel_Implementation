@@ -121,7 +121,7 @@ boot_alloc (uint32_t n)
 
     /*
      *Hawx: .bss is the section to store the uninitialized global data.
-     *Use the 
+j    *Use the 
      */
     if (!nextfree)
     {
@@ -471,7 +471,14 @@ page_init (void)
     }
     pages[PGNUM (IOPHYSMEM) - 1].pp_link = &pages[PGNUM (next_boot_free)];
     pages[PGNUM (next_boot_free) - 1].pp_link = NIL;
-    pages[0].pp_link = &pages[PGNUM (IOPHYSMEM)];   //link to head-page.0
+    pages[0].pp_link = &pages[PGNUM (IOPHYSMEM)];   //link to head-page.0 : For OS reserved used pagaes
+
+    //Avoid adding MPENTRY_PADDR into freelist
+    pages[PGNUM(MPENTRY_PADDR)-1].pp_link = &pages[PGNUM(MPENTRY_PADDR)+1];
+    pages[PGNUM(MPENTRY_PADDR)].pp_ref = 1;
+    pages[PGNUM(MPENTRY_PADDR)].pp_link = NIL;
+    pages[PGNUM (IOPHYSMEM)].pp_link = &pages[PGNUM(MPENTRY_PADDR)];   //link to head-page.0 : For OS reserved used pagaes
+
 
 
     //Set nAvailPages

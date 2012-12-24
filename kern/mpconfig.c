@@ -76,7 +76,17 @@ sum(void *addr, int len)
 
 	sum = 0;
 	for (i = 0; i < len; i++)
-		sum += ((uint8_t *)addr)[i];
+        {
+            if(((uint8_t *)addr)[i] > 0)
+            {
+                ((uint8_t *)addr)[i];
+            }
+            else if(((uint8_t *)addr)[i] < 0)
+            {
+                ((uint8_t *)addr)[i];
+            }
+            sum += ((uint8_t *)addr)[i];
+        }
 	return sum;
 }
 
@@ -108,6 +118,7 @@ mpsearch(void)
 	static_assert(sizeof(*mp) == 16);
 
 	// The BIOS data area lives in 16-bit segment 0x40.
+        //2-Byte aligment.
 	bda = (uint8_t *) KADDR(0x40 << 4);
 
 	// [MP 4] The 16-bit segment of the EBDA is in the two bytes

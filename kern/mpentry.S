@@ -12,9 +12,11 @@
 # Specification says that the AP will start in real mode with CS:IP
 # set to XY00:0000, where XY is an 8-bit value sent with the
 # STARTUP. Thus this code must start at a 4096-byte boundary.
+#                                         4*1024 bytes
 #
 # Because this code sets DS to zero, it must run from an address in
 # the low 2^16 bytes of physical memory.
+#         64*1024 bytes
 #
 # boot_aps() (in init.c) copies this code to MPENTRY_PADDR (which
 # satisfies the above restrictions).  Then, for each AP, it stores the
