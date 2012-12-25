@@ -116,10 +116,11 @@ trap_init_percpu (void)
 	// Setup a TSS so that we get the right stack
 	// when we trap to the kernel.
         assert(thiscpu->cpu_id == cpunum());
-        if(0 != thiscpu->cpu_ts.ts_ss0)
+        if(0 == thiscpu->cpu_ts.ts_ss0)
         {
-            thiscpu->cpu_ts.ts_esp0 = (int)percpu_kstacks[thiscpu->cpu_id];
+            thiscpu->cpu_ts.ts_esp0 = KSTACKTOP - (KSTKSIZE+KSTKGAP)*thiscpu->cpu_id;
             thiscpu->cpu_ts.ts_ss0 = GD_KD;
+            //cprintf("cpu_%d's stack is 0x%08x\n",thiscpu->cpu_id,thiscpu->cpu_ts.ts_esp0); //Debug
 
             gdt[(GD_TSS0 >> 3) + (thiscpu->cpu_id)] = SEG16(STS_T32A
                     , (uint32_t) (&(thiscpu->cpu_ts))
