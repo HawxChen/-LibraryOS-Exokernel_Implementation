@@ -1,0 +1,22 @@
+1.(After Exercise01)
+    Compare kern/mpentry.S side by side with boot/boot.S. 
+    Bearing in mind that kern/mpentry.S is compiled and linked to run above KERNBASE just like everything else in the kernel
+    , what is the purpose of macro MPBOOTPHYS? 
+    Why is it necessary in kern/mpentry.S but not in boot/boot.S?
+    In other words, what could go wrong if it were omitted in kern/mpentry.S? 
+    Hint: recall the differences between the link address and the load address that we have discussed in Lab 1.
+ANS:
+    #define MPBOOTPHYS(s) ((s) - mpentry_start + MPENTRY_PADDR))))
+    MPBOOTPHYS is to calculate symobl address relative to MPENTRY_PADDR.
+    The ASM is executed in the load address above KERNBASE, but JOS need to run mp_main at 0x7000 address!
+    Of course 0x7000's page is reserved at pmap.c.
+
+2.(After Exercise04)
+    It seems that using the big kernel lock guarantees that only one CPU can run the kernel code at a time. 
+    Why do we still need separate kernel stacks for each CPU? 
+    Describe a scenario in which using a shared kernel stack will go wrong
+    , even with the protection of the big kernel lock.
+ANS:
+    If it leaves future-needed data in the single kernel stack,
+    It will have the re-entrant problem.
+

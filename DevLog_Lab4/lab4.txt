@@ -1,0 +1,40 @@
+kern/lapic.c
+    cpunum()
+        Which CPU is code running on?
+    lapic_startap()
+        Startup IPI from the BSP to APs to bring up other CPUs
+    apic_init()
+        program LAPIC's built-in timer to trigger clock interrupts
+        to support preemptive multitasking
+
+mem_init_mp @ kern/pmap.c
+    memory map for mp functionality
+
+mp_init @ kern/mpconfig.c
+    retrieve this information by reading the MP configuration table 
+    that resides in the BIOS's region of memory
+
+boot_aps @ kern/init.c
+    drive the ap bootstrap processs. Activate APs one after another.
+
+mp_main @ kern/init.c
+    APs was setup, and APs will execute on this routine.
+
+Questions:
+    1. APs' init code should be in 4K byte aligment. But why is MPENTRY_PADDR = 0x7000?
+    2. APs' init routine at address according to STARTUP | (0x7000 >> 12)
+                                                           -------------
+                                                                VV  ==> translate to CS:IP = VV00:0000h or 000VV000h 
+                                                                                             or they are the same. 
+    3.percpu_kstacks[NCPU][KSTKSIZE] <<< where to init it
+       It is the global varable defined at kern/mpconfig.c.
+       And map the CPU_i's kernel stack bottom's virtual address, into percpukstack[i]
+    4.  at kern/mpentry.S
+	# Call mp_main().  (Exercise for the reader: why the indirect call?)
+	movl    $mp_main, %eax
+	call    *%eax
+        Knowledge: xv6-ref.book
+        Experiment: 1056 ~ 1061
+    5.  What does the DS do?
+        # Because this code sets DS to zero, it must run from an address in
+   
