@@ -17,7 +17,7 @@
 
 static void boot_aps(void);
 
-void
+    void
 i386_init (void)
 {
     extern char edata[], end[];
@@ -40,23 +40,23 @@ i386_init (void)
     env_init ();
     trap_init ();
 
-	// Lab 4 multiprocessor initialization functions
-	mp_init();
-	lapic_init();
+    // Lab 4 multiprocessor initialization functions
+    mp_init();
+    lapic_init();
 
-	// Lab 4 multitasking initialization functions
-	pic_init();
+    // Lab 4 multitasking initialization functions
+    pic_init();
 
-	// Acquire the big kernel lock before waking up APs
-	// Your code here:
+    // Acquire the big kernel lock before waking up APs
+    // Your code here:
 
-	// Starting non-boot CPUs
-	boot_aps();
+    // Starting non-boot CPUs
+    boot_aps();
 
-	// Should always have idle processes at first.
-	int i;
-	for (i = 0; i < NCPU; i++)
-		ENV_CREATE(user_idle, ENV_TYPE_IDLE);
+    // Should always have idle processes at first.
+    int i;
+    for (i = 0; i < NCPU; i++)
+        ENV_CREATE(user_idle, ENV_TYPE_IDLE);
 
 #if defined(TEST)
     // Don't touch -- used by grading script!
@@ -72,8 +72,8 @@ i386_init (void)
     // Touch all you want.
     ENV_CREATE(user_primes, ENV_TYPE_USER);
 #endif // TEST*
-	// Schedule and run the first user environment!
-	sched_yield();
+    // Schedule and run the first user environment!
+    sched_yield();
 }
 
 // While boot_aps is booting a given CPU, it communicates the per-core
@@ -82,53 +82,53 @@ i386_init (void)
 void *mpentry_kstack;
 
 // Start the non-boot (AP) processors.
-static void
+    static void
 boot_aps(void)
 {
-	extern unsigned char mpentry_start[], mpentry_end[];
-	void *code;
-	struct Cpu *c;
+    extern unsigned char mpentry_start[], mpentry_end[];
+    void *code;
+    struct Cpu *c;
 
-	// Write entry code to unused memory at MPENTRY_PADDR
-	code = KADDR(MPENTRY_PADDR);
-	memmove(code, mpentry_start, mpentry_end - mpentry_start);
+    // Write entry code to unused memory at MPENTRY_PADDR
+    code = KADDR(MPENTRY_PADDR);
+    memmove(code, mpentry_start, mpentry_end - mpentry_start);
 
-	// Boot each AP one at a time
-	for (c = cpus; c < cpus + ncpu; c++) {
-		if (c == cpus + cpunum())  // We've started already.
-			continue;
+    // Boot each AP one at a time
+    for (c = cpus; c < cpus + ncpu; c++) {
+        if (c == cpus + cpunum())  // We've started already.
+            continue;
 
-		// Tell mpentry.S what stack to use 
-		mpentry_kstack = percpu_kstacks[c - cpus] + KSTKSIZE;
-		// Start the CPU at mpentry_start
-		lapic_startap(c->cpu_id, PADDR(code));
-		// Wait for the CPU to finish some basic setup in mp_main()
-		while(c->cpu_status != CPU_STARTED)
-			;
-	}
+        // Tell mpentry.S what stack to use 
+        mpentry_kstack = percpu_kstacks[c - cpus] + KSTKSIZE;
+        // Start the CPU at mpentry_start
+        lapic_startap(c->cpu_id, PADDR(code));
+        // Wait for the CPU to finish some basic setup in mp_main()
+        while(c->cpu_status != CPU_STARTED)
+            ;
+    }
 }
 
 // Setup code for APs
-void
+    void
 mp_main(void)
 {
-	// We are in high EIP now, safe to switch to kern_pgdir 
-	lcr3(PADDR(kern_pgdir));
-	cprintf("SMP: CPU %d starting\n", cpunum());
+    // We are in high EIP now, safe to switch to kern_pgdir 
+    lcr3(PADDR(kern_pgdir));
+    cprintf("SMP: CPU %d starting\n", cpunum());
 
-	lapic_init();
-	env_init_percpu();
-	trap_init_percpu();
-	xchg(&thiscpu->cpu_status, CPU_STARTED); // tell boot_aps() we're up
+    lapic_init();
+    env_init_percpu();
+    trap_init_percpu();
+    xchg(&thiscpu->cpu_status, CPU_STARTED); // tell boot_aps() we're up
 
-	// Now that we have finished some basic setup, call sched_yield()
-	// to start running processes on this CPU.  But make sure that
-	// only one CPU can enter the scheduler at a time!
-	//
-	// Your code here:
+    // Now that we have finished some basic setup, call sched_yield()
+    // to start running processes on this CPU.  But make sure that
+    // only one CPU can enter the scheduler at a time!
+    //
+    // Your code here:
 
-	// Remove this after you finish Exercise 4
-	for (;;);
+    // Remove this after you finish Exercise 4
+    for (;;);
 }
 
 /*
@@ -141,7 +141,7 @@ const char *panicstr;
  * Panic is called on unresolvable fatal errors.
  * It prints "panic: mesg", and then enters the kernel monitor.
  */
-void
+    void
 _panic (const char *file, int line, const char *fmt, ...)
 {
     va_list ap;
@@ -153,20 +153,20 @@ _panic (const char *file, int line, const char *fmt, ...)
     // Be extra sure that the machine is in as reasonable state
     __asm __volatile ("cli; cld");
 
-	va_start(ap, fmt);
-	cprintf("kernel panic on CPU %d at %s:%d: ", cpunum(), file, line);
-	vcprintf(fmt, ap);
-	cprintf("\n");
-	va_end(ap);
+    va_start(ap, fmt);
+    cprintf("kernel panic on CPU %d at %s:%d: ", cpunum(), file, line);
+    vcprintf(fmt, ap);
+    cprintf("\n");
+    va_end(ap);
 
-  dead:
+dead:
     /* break into the kernel monitor */
     while (1)
         monitor (NULL);
 }
 
 /* like panic, but don't */
-void
+    void
 _warn (const char *file, int line, const char *fmt, ...)
 {
     va_list ap;
