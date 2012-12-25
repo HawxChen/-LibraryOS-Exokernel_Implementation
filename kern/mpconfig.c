@@ -197,6 +197,7 @@ mp_init(void)
 			if (ncpu < NCPU) {
 				cpus[ncpu].cpu_id = ncpu;
 				ncpu++;
+	                        //cprintf("Read MP table: CPU %d found %d CPU(s)\n", cpus[ncpu-1].cpu_id,  ncpu); //Debug
 			} else {
 				cprintf("SMP: too many CPUs, CPU %d disabled\n",
 					proc->apicid);

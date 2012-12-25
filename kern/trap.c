@@ -15,7 +15,6 @@
 #include <kern/spinlock.h>
 
 extern uint32_t vects[];
-static struct Taskstate ts;
 
 /* For debugging, so print_trapframe can distinguish between printing
  * a saved trapframe and printing the current trapframe and print some
@@ -81,10 +80,7 @@ trap_init (void)
     }
 
     SETGATE (idt[T_SYSCALL], TRAP_Y, GD_KT, vects[T_SYSCALL], DPL_USER);
-
     SETGATE (idt[T_BRKPT], TRAP_Y, GD_KT, vects[T_BRKPT], DPL_USER);
-
-
 
     // Per-CPU setup 
     trap_init_percpu ();
@@ -119,6 +115,25 @@ trap_init_percpu (void)
 
 	// Setup a TSS so that we get the right stack
 	// when we trap to the kernel.
+        assert(thiscpu->cpu_id == cpunum());
+        if(0 != thiscpu->cpu_ts.ts_ss0)
+        {
+            thiscpu->cpu_ts.ts_esp0 = (int)percpu_kstacks[thiscpu->cpu_id];
+            thiscpu->cpu_ts.ts_ss0 = GD_KD;
+
+            gdt[(GD_TSS0 >> 3) + (thiscpu->cpu_id)] = SEG16(STS_T32A
+                    , (uint32_t) (&(thiscpu->cpu_ts))
+                    , sizeof(struct Taskstate)
+                    , 0);
+
+            gdt[(GD_TSS0 >> 3) + (thiscpu->cpu_id)].sd_s = 0;
+
+            ltr((((GD_TSS0 >> 3)+thiscpu->cpu_id) << 3));
+            lidt(&idt_pd);
+        }
+
+        /*
+         *The sample to init BSP
 	ts.ts_esp0 = KSTACKTOP;
 	ts.ts_ss0 = GD_KD;
 
@@ -133,6 +148,7 @@ trap_init_percpu (void)
 
 	// Load the IDT
 	lidt(&idt_pd);
+        */
 }
 
 void
