@@ -281,9 +281,10 @@ mem_init (void)
     /*
      *bootstack is the pointer in C, It is the Virtual memory....
      */
-    boot_map_region (kern_pgdir, (uintptr_t) (KSTACKTOP - KSTKSIZE),
-                     (uint32_t) (KSTKSIZE), (physaddr_t) PADDR (bootstack),
-                     PTE_W);
+    boot_map_region (kern_pgdir
+            , (uintptr_t) (KSTACKTOP - KSTKSIZE)
+            , (uint32_t) (KSTKSIZE), (physaddr_t) PADDR (bootstack)
+            , PTE_W);
 
 
     //////////////////////////////////////////////////////////////////////
@@ -343,8 +344,10 @@ mem_init (void)
 static void
 mem_init_mp(void)
 {
+        int i;
 	// Create a direct mapping at the top of virtual address space starting
-	// at IOMEMBASE for accessing the LAPIC unit using memory-mapped I/O.
+	// at IOMEMBASE for accessing the LAPIC unit using memory-mapped I/O 
+        // hardwired to registers of some devices.
 	boot_map_region(kern_pgdir, IOMEMBASE, -IOMEMBASE, IOMEM_PADDR, PTE_W);
 
 	// Map per-CPU stacks starting at KSTACKTOP, for up to 'NCPU' CPUs.
@@ -363,7 +366,13 @@ mem_init_mp(void)
 	//     Permissions: kernel RW, user NONE
 	//
 	// LAB 4: Your code here:
-
+        for(i = 0; i< NCPU; i++)
+        {
+            boot_map_region(kern_pgdir,
+                            KSTACKTOP - KSTKSIZE*(i+1) - KSTKGAP*i,
+                            KSTKSIZE,PADDR(percpu_kstacks[i]),
+                            PTE_W);
+        }
 }
 
 // --------------------------------------------------------------
@@ -646,6 +655,16 @@ pgdir_walk (pde_t * pgdir, const void *va, int create)
 // mapped pages.
 //
 // Hint: the TA solution uses pgdir_walk
+static int compare_MAX(uint32_t v, uint32_t max, uint8_t units)
+{
+    int i;
+    for(i = 0;i < units;i++)
+    {
+        if(v + i == max)
+            return -1;
+    }
+    return 0;
+}
 static void
 boot_map_region (pde_t * pgdir, uintptr_t va, size_t size, physaddr_t pa,
                  int perm)
@@ -653,9 +672,13 @@ boot_map_region (pde_t * pgdir, uintptr_t va, size_t size, physaddr_t pa,
     uint32_t i;
     pte_t *ptep = NIL;
 
-    cprintf ("va:0x%x,size:%d,pa:0x%x\n", va, size, pa);
+    //cprintf ("va:0x%x,size:%u,pa:0x%x\n", va, size, pa); //Debug
     size = ROUNDUP (size, PGSIZE);
-    for (i = 0; i < size; i += PGSIZE)
+    for (i = 0 
+            ; i < size 
+              && 0 == compare_MAX(va,0xFFFFFFFF,4)
+              && 0 == compare_MAX(pa,0xFFFFFFFF,4)
+            ; i += PGSIZE)
     {
         ptep = pgdir_walk (pgdir, (void *) (va + i), CREATE);
         assert (NIL != ptep);
@@ -669,6 +692,7 @@ boot_map_region (pde_t * pgdir, uintptr_t va, size_t size, physaddr_t pa,
             pgdir[PDX (va + i)] |= PTE_U;
         }
     }
+    //cprintf("===%u===va+i:%x=pa+i:%x=\n",i,va+i,pa+i); //Debug
 
 }
 
@@ -1162,6 +1186,7 @@ check_kern_pgdir (void)
 	// check kernel stack
 	// (updated in lab 4 to check per-CPU kernel stacks)
 	for (n = 0; n < NCPU; n++) {
+                //cprintf("cpu%d's stack:0x%8x\n",n+1,percpu_kstacks[n]); //Debug
 		uint32_t base = KSTACKTOP - (KSTKSIZE + KSTKGAP) * (n + 1);
 		for (i = 0; i < KSTKSIZE; i += PGSIZE)
 			assert(check_va2pa(pgdir, base + KSTKGAP + i)
