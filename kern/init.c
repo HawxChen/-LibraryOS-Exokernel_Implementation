@@ -71,7 +71,11 @@ i386_init (void)
     // We only have one user environment for now, so just run it.
     //env_run (&envs[0]);
     // Touch all you want.
-    ENV_CREATE(user_primes, ENV_TYPE_USER);
+    
+    ENV_CREATE(user_yield, ENV_TYPE_USER);
+    ENV_CREATE(user_yield, ENV_TYPE_USER);
+    ENV_CREATE(user_yield, ENV_TYPE_USER);
+    
 #endif // TEST*
     // Schedule and run the first user environment!
     sched_yield();

@@ -10,7 +10,7 @@ void
 sched_yield(void)
 {
 	struct Env *idle;
-	int i;
+	int i = -1,cnt;
 
 	// Implement simple round-robin scheduling.
 	//
@@ -30,14 +30,46 @@ sched_yield(void)
 
 	// LAB 4: Your code here.
 
+        if(0 == thiscpu->cpu_env)
+        {
+            i = 0;
+        }
+        else if(thiscpu->cpu_env->env_status == ENV_RUNNING)
+        { /*Note: It might check for future needed state*/
+            thiscpu->cpu_env->env_status = ENV_RUNNABLE;
+        }
+
+        if(i == -1)
+        {
+           i = thiscpu->cpu_env - envs;
+        }
+        
+	for ( cnt = 0 ;cnt < NENV ;i++, cnt++) 
+        {
+            if(i >= NENV)
+                i = i % NENV;
+            if(envs[i].env_type != ENV_TYPE_IDLE && envs[i].env_status == ENV_RUNNABLE)
+            {
+                /*env_run will do 
+                 * 1: set thiscpu's cpu_env to the passed env. 
+                 * 2: set env's state to ENV_RUNNING
+                 * */
+                env_run(&envs[i]);
+                break;
+            }
+        }
+
 	// For debugging and testing purposes, if there are no
 	// runnable environments other than the idle environments,
 	// drop into the kernel monitor.
 	for (i = 0; i < NENV; i++) {
 		if (envs[i].env_type != ENV_TYPE_IDLE &&
 		    (envs[i].env_status == ENV_RUNNABLE ||
-		     envs[i].env_status == ENV_RUNNING))
-			break;
+                     envs[i].env_status == ENV_RUNNING))
+                {
+                    //cprintf("===env %d is the GUY===\n",i); //Debug
+                    break;
+                }
 	}
 	if (i == NENV) {
 		cprintf("No more runnable environments!\n");
@@ -45,9 +77,16 @@ sched_yield(void)
 			monitor(NULL);
 	}
 
-	// Run this CPU's idle environment when nothing else is runnable.
-	idle = &envs[cpunum()];
-	if (!(idle->env_status == ENV_RUNNABLE || idle->env_status == ENV_RUNNING))
-		panic("CPU %d: No idle environment!", cpunum());
-	env_run(idle);
+        // Run this CPU's idle environment when nothing else is runnable.'
+        if(cnt == NENV)
+        {
+            idle = &envs[cpunum()];
+            if (!(idle->env_status == ENV_RUNNABLE || idle->env_status == ENV_RUNNING))
+                panic("CPU %d: No idle environment!", cpunum());
+            env_run(idle);
+            //Compare it to co-routine scheduler in xv6
+            //It is never returned here.
+            cprintf("CPU %d is back\n",cpunum());
+        }
+
 }

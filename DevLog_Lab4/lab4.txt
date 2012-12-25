@@ -22,6 +22,7 @@ mp_main @ kern/init.c
 
 Questions:
     1. APs' init code should be in 4K byte aligment. But why is MPENTRY_PADDR = 0x7000?
+
     2. APs' init routine at address according to STARTUP | (0x7000 >> 12)
                                                            -------------
                                                                 VV  ==> translate to CS:IP = VV00:0000h or 000VV000h 
@@ -29,12 +30,41 @@ Questions:
     3.percpu_kstacks[NCPU][KSTKSIZE] <<< where to init it
        It is the global varable defined at kern/mpconfig.c.
        And map the CPU_i's kernel stack bottom's virtual address, into percpukstack[i]
+
     4.  at kern/mpentry.S
 	# Call mp_main().  (Exercise for the reader: why the indirect call?)
 	movl    $mp_main, %eax
 	call    *%eax
         Knowledge: xv6-ref.book
         Experiment: 1056 ~ 1061
-    5.  What does the DS do?
-        # Because this code sets DS to zero, it must run from an address in
+
+    5.  What does the DS do?  
+        In kern/mpentry.S:  Because this code sets DS to zero, it must run from an address in
+
+    6.  env_free:
+        Should It set the env_type back to ENV_TYPE_IDLE?
+        ANS: No.
+
+    7.  at sched_yield()
+        //It is never returned here.
+        //Compare it to co-routine scheduler in xv6
+        //Does JOS have kernel scheduler thread?
+        //Does xv6 have kernel scheduler thread?
+        cprintf("CPU %d is back\n",cpunum());
+        where does the kernel re-enter?
+
+    8.  at sched_yield()
+        Doesn't It put the following code before 'entering monitor section'?
+        // Run this CPU's idle environment when nothing else is runnable.'
+        if(cnt == NENV)
+        {
+            // Run this CPU's idle environment when nothing else is runnable.
+            idle = &envs[cpunum()];
+            if (!(idle->env_status == ENV_RUNNABLE || idle->env_status == ENV_RUNNING))
+                panic("CPU %d: No idle environment!", cpunum());
+            env_run(idle);
+            //Compare it to co-routine scheduler in xv6
+            //It is never returned here.
+            cprintf("CPU %d is back\n",cpunum());
+        }
    

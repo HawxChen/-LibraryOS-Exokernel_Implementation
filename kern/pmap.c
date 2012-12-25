@@ -948,13 +948,11 @@ user_mem_check (struct Env *env, const void *va, size_t len, int perm)
         }
 
 
-        cprintf ("va_cnt:0x%x,va+len:0x%x, pte_p:0x%x\n", va_cnt,
-                 (uint32_t) va + len, (uint32_t) pte_p);
+        //cprintf ("va_cnt:0x%x,va+len:0x%x, pte_p:0x%x\n", va_cnt, (uint32_t) va + len, (uint32_t) pte_p); //Debug
 
         if (!JUDGE_CHECK_PERM (*pte_p, check_perm))
         {
-            cprintf ("env_pgdir:0x%x,pte_p:0x%x,*pte:0x%x\n", env->env_pgdir,
-                     (uint32_t) pte_p, *pte_p);
+            //cprintf ("env_pgdir:0x%x,pte_p:0x%x,*pte:0x%x\n", env->env_pgdir, (uint32_t) pte_p, *pte_p); //Debug
             goto ERROR_RET;
         }
 

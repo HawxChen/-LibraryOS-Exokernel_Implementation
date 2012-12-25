@@ -589,6 +589,8 @@ env_free (struct Env *e)
 
     // return the environment to the free list
     e->env_status = ENV_FREE;
+    //Is it needed?
+    //e->env_type = ENV_TYPE_IDLE;
     e->env_link = env_free_list;
     env_free_list = e;
 }
