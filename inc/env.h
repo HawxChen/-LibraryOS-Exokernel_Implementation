@@ -28,6 +28,7 @@ typedef int32_t envid_t;
 #define LOG2NENV		10
 #define NENV			(1 << LOG2NENV)
 #define ENVX(envid)		((envid) & (NENV - 1))
+//#define GETENV(_envid)          ((_envid) ? (&(envs[ENVX(_envid)])): (curenv)) 
 
 // Values of env_status in struct Env
 enum {

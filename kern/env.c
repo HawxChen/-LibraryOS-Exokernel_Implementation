@@ -79,6 +79,8 @@ envid2env (envid_t envid, struct Env **env_store, bool checkperm)
 {
     struct Env *e;
 
+    if(envid < 0)
+        return -E_BAD_ENV;
     // If envid is zero, return the current environment.
     if (envid == 0)
     {
@@ -94,6 +96,7 @@ envid2env (envid_t envid, struct Env **env_store, bool checkperm)
     e = &envs[ENVX (envid)];
     if (e->env_status == ENV_FREE || e->env_id != envid)
     {
+        cprintf("===Not Match: e->env_id:0x%08x/envid:0x%08x===\n",e->env_id,envid);
         *env_store = 0;
         return -E_BAD_ENV;
     }
@@ -681,6 +684,7 @@ env_run (struct Env *e)
     curenv = e;
     curenv->env_status = ENV_RUNNING;
     curenv->env_runs++;
+    //cprintf("trap's  curenv_id:0x%8x, cpunum:%d\n",curenv->env_id,cpunum()); //Debug
     lcr3 (PADDR (curenv->env_pgdir));
     unlock_kernel();
     env_pop_tf (&curenv->env_tf);

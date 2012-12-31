@@ -83,6 +83,7 @@ trap_init (void)
     SETGATE (idt[T_BRKPT], TRAP_Y, GD_KT, vects[T_BRKPT], DPL_USER);
 
     // Per-CPU setup 
+    //Init BSP: main processor.
     trap_init_percpu ();
 }
 
@@ -286,7 +287,7 @@ trap (struct Trapframe *tf)
 		// LAB 4: Your code here.
                 lock_kernel();
 		assert(curenv);
-
+                //cprintf("///Trap from USER mode\\\\\\\n"); //Debug
 		// Garbage collect if current enviroment is a zombie
 		if (curenv->env_status == ENV_DYING) {
 			env_free(curenv);
@@ -301,6 +302,10 @@ trap (struct Trapframe *tf)
 		// The trapframe on the stack should be ignored from here on.
 		tf = &curenv->env_tf;
 	}
+        else
+        {
+                //cprintf("\\\\\\Trap from KERNEL mode///\n"); //Debug
+        }
 
 	// Record that tf is the last real trapframe so
 	// print_trapframe can print some additional information.
@@ -312,8 +317,10 @@ trap (struct Trapframe *tf)
 	// If we made it to this point, then no other environment was
 	// scheduled, so we should return to the current environment
 	// if doing so makes sense.
-	if (curenv && curenv->env_status == ENV_RUNNING)
-		env_run(curenv);
+        if (curenv && curenv->env_status == ENV_RUNNING)
+        {
+            env_run(curenv);
+        }
 	else
 		sched_yield();
 }

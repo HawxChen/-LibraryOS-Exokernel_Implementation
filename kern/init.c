@@ -38,6 +38,7 @@ i386_init (void)
 
     // Lab 3 user environment initialization functions
     env_init ();
+    //Includes Init Main Processor.
     trap_init ();
 
     // Lab 4 multiprocessor initialization functions
@@ -72,9 +73,10 @@ i386_init (void)
     //env_run (&envs[0]);
     // Touch all you want.
     
-    ENV_CREATE(user_yield, ENV_TYPE_USER);
-    ENV_CREATE(user_yield, ENV_TYPE_USER);
-    ENV_CREATE(user_yield, ENV_TYPE_USER);
+    //ENV_CREATE(user_yield, ENV_TYPE_USER);
+    //ENV_CREATE(user_yield, ENV_TYPE_USER);
+    //ENV_CREATE(user_yield, ENV_TYPE_USER);
+    ENV_CREATE(user_dumbfork, ENV_TYPE_USER);
     
 #endif // TEST*
     // Schedule and run the first user environment!
@@ -123,6 +125,7 @@ mp_main(void)
 
     lapic_init();
     env_init_percpu();
+    //Init Other Procsssors
     trap_init_percpu();
     xchg(&thiscpu->cpu_status, CPU_STARTED); // tell boot_aps() we're up
 

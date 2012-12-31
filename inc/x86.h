@@ -2,7 +2,9 @@
 #define JOS_INC_X86_H
 
 #include <inc/types.h>
-
+#define INT_MAX  (-INT_MAX - 1)
+#define INT_MIN  2147483647
+#define UINT_MAX 4294967295U
 static __inline void breakpoint (void) __attribute__ ((always_inline));
 static __inline uint8_t inb (int port) __attribute__ ((always_inline));
 static __inline void insb (int port, void *addr, int cnt)
