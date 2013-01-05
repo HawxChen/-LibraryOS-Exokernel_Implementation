@@ -78,6 +78,11 @@ start32:
 	# Call mp_main().  (Exercise for the reader: why the indirect call?)
 	movl    $mp_main, %eax
 	call    *%eax
+#	call    %eax
+#	call    (%eax)
+#	call    *(%eax)
+#	jmp     *%eax
+#	jmp     ...
 
 	# If mp_main returns (it shouldn't), loop.
 spin:

@@ -68,7 +68,6 @@ i386_init (void)
     //ENV_CREATE (user_breakpoint, ENV_TYPE_USER);
     //ENV_CREATE (user_buggyhello2, ENV_TYPE_USER);
     //ENV_CREATE (user_breakpoint, ENV_TYPE_USER);
-    //ENV_CREATE (user_faultwrite, ENV_TYPE_USER);
     // We only have one user environment for now, so just run it.
     //env_run (&envs[0]);
     // Touch all you want.
@@ -76,7 +75,9 @@ i386_init (void)
     //ENV_CREATE(user_yield, ENV_TYPE_USER);
     //ENV_CREATE(user_yield, ENV_TYPE_USER);
     //ENV_CREATE(user_yield, ENV_TYPE_USER);
-    ENV_CREATE(user_dumbfork, ENV_TYPE_USER);
+    //ENV_CREATE(user_faultalloc, ENV_TYPE_USER);
+    //ENV_CREATE(user_faultnostack, ENV_TYPE_USER);
+    ENV_CREATE (user_faultread, ENV_TYPE_USER);
     
 #endif // TEST*
     // Schedule and run the first user environment!

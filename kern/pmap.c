@@ -815,8 +815,10 @@ page_insert (pde_t * pgdir, struct Page *pp, void *va, int perm)
 struct Page *
 page_lookup (pde_t * pgdir, void *va, pte_t ** pte_store)
 {
-    *pte_store = pgdir_walk (pgdir, va, NO_CREATE);
+    if(NULL == pte_store)
+        return NULL;
 
+    *pte_store = pgdir_walk (pgdir, va, NO_CREATE);
 
     // Hawx:
     // Coincidence: It could also use the following 2 lines.
@@ -970,7 +972,7 @@ user_mem_check (struct Env *env, const void *va, size_t len, int perm)
     /*
         Bug: ((uint32_t) va + len)  it will be the pointer's add.
      */
-    while (va_cnt <= ((uint32_t) va) + len);
+    while (va_cnt < ((uint32_t) va) + len);
 
     goto SUCCESS_RET;
 

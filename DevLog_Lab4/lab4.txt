@@ -32,11 +32,22 @@ Questions:
        And map the CPU_i's kernel stack bottom's virtual address, into percpukstack[i]
 
     4.  at kern/mpentry.S
+        4.1
 	# Call mp_main().  (Exercise for the reader: why the indirect call?)
 	movl    $mp_main, %eax
 	call    *%eax
         Knowledge: xv6-ref.book
         Experiment: 1056 ~ 1061
+        http://en.wikipedia.org/wiki/Addressing_mode#PC-relative_2
+        4.2
+        call    *%eax
+        call    %eax
+        call    (%eax)
+        call    *(%eax)
+        jmp     *%eax
+        jmp     ...
+
+
 
     5.  What does the DS do?  
         In kern/mpentry.S:  Because this code sets DS to zero, it must run from an address in
@@ -67,4 +78,15 @@ Questions:
             //It is never returned here.
             cprintf("CPU %d is back\n",cpunum());
         }
+    9.  In page_fault_handler:
+        //In the recursive case, this means we have to leave
+        // an extra word between the current top of the exception stack and
+        // the new stack frame because the exception stack _is_ the trap-time
+        // stack.
+    10.Make sure you understand why user/faultalloc and user/faultallocbad behave differently.
+        user/faultalloc.c is the recursive page fault.
+        Just Look! lenth of 100 chars cross pages.
+	cprintf("%s\n", (char*)0xCafeBffe);
+	snprintf((char*) addr, 100, "this string was faulted in at %x", addr);
+
         

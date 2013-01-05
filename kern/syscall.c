@@ -174,7 +174,15 @@ static int
 sys_env_set_pgfault_upcall(envid_t envid, void *func)
 {
     // LAB 4: Your code here.
-    panic("sys_env_set_pgfault_upcall not implemented");
+    struct Env* e;
+    if(envid2env(envid,&e,1))
+        return -E_BAD_ENV;
+
+    /*Hawx:
+     * Should here need the precaution about like evilhandler.c, and faulthandle.c
+     * ?*/
+    e->env_pgfault_upcall = func;
+    return 0;
 }
 
 // Allocate a page of memory and map it at 'va' with permission
@@ -283,7 +291,7 @@ sys_page_map(envid_t srcenvid/*In fork: child*/, void *srcva,
     // Perm has the same restrictions as in sys_page_alloc, except
     // that it also must not grant write access to a read-only
     // page.
-    if( !((*src_pte) & PTE_W) && (perm & PTE_W))
+    if( (!((*src_pte) & PTE_W)) && (perm & PTE_W))
         return -E_INVAL;
 
     return page_insert(dst_e->env_pgdir,src_page,dstva,perm);
@@ -412,6 +420,8 @@ syscall (uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3,
          return sys_page_unmap(a1,(void*)a2);
     case SYS_env_set_status:
          return sys_env_set_status(a1,a2);
+    case SYS_env_set_pgfault_upcall:
+         return sys_env_set_pgfault_upcall(a1,(void*)a2);
     default:
         return -E_INVAL;
     }
