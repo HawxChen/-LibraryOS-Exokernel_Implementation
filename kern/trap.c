@@ -352,8 +352,9 @@ page_fault_handler (struct Trapframe *tf)
 {
     uint32_t fault_va;
     pte_t *ptep;
-
+#ifdef DEBUG_TRAP_C
     cprintf("===Execute in page_fault_handler===\n");
+#endif
     // Read processor's CR2 register to find the faulting address
     fault_va = rcr2 ();
     /*
@@ -369,25 +370,6 @@ page_fault_handler (struct Trapframe *tf)
     }
     ptep = pgdir_walk (curenv->env_pgdir, (void *) fault_va, NO_CREATE);
 
-    if (PTE_P & *ptep) {
-        do {
-            //user mode can do?
-            if (!(PTE_U & *ptep)) {
-                break;
-            }
-
-            //Writable?
-            if (!(PTE_W & *ptep)) {
-                break;
-            }
-        }
-        while (0);
-    }
-    else {
-        /*
-         *I have already implemented it in the lab4 partB
-         */
-    }
 
     // Handle kernel-mode page faults.
 
@@ -431,17 +413,22 @@ page_fault_handler (struct Trapframe *tf)
 
     // LAB 4: Your code here.
     uint32_t esp = UXSTACKTOP;
+    //Don't remove it: the test script needed.'
     cprintf ("[%08x] user fault va %08x ip %08x\n",curenv->env_id, fault_va, tf->tf_eip);
-    cprintf ("[0x%08x] user fault va 0x%08x tf->eip 0x%08x, tf->esp 0x%08x\n", curenv->env_id, fault_va, tf->tf_eip, tf->tf_esp);
+    cprintf ("[0x%08x] user fault va 0x%08x,tf->err 0x%03x ,tf->eip 0x%08x, tf->esp 0x%08x\n"
+            , curenv->env_id, fault_va, tf->tf_err,tf->tf_eip, tf->tf_esp);
 
     pte_t* pte;
 
     if(0 == curenv->env_pgfault_upcall){
+        cprintf("!!! envid:0x%x, No env_pgfault_upcall !!!\n",curenv->env_id);
         goto Failed;
     }
 
     user_mem_assert(curenv,curenv->env_pgfault_upcall,PGSIZE, PTE_U | PTE_P);
+#ifdef DEBUG_TRAP_C
     cprintf("===Pass curenv->env_pgfault_upcall===\n");
+#endif
 
     /*
        It is right but it can't pass the grade.sh. It should check from top.
@@ -453,7 +440,9 @@ page_fault_handler (struct Trapframe *tf)
             (void*)(UXSTACKTOP-sizeof (struct UTrapframe)), 
             sizeof(struct UTrapframe),
             PTE_U | PTE_P | PTE_W);
+#ifdef DEBUG_TRAP_C
     cprintf("===Pass UXSTACKBASE===\n");
+#endif
 
 
     if(UXSTACKTOP > tf->tf_esp && UXSTACKBASE <= tf->tf_esp) {
@@ -498,7 +487,9 @@ page_fault_handler (struct Trapframe *tf)
     push(&esp,tf->tf_err);
     push(&esp,fault_va);
 
+#ifdef DEBUG_TRAP_C
     cprintf("===env_pgfault_upcall:0x%08x===\n",curenv->env_pgfault_upcall);
+#endif
     /*
      * Don'need to do it.
      * lcr3(PADDR(kern_pgdir));

@@ -67,6 +67,7 @@ dumbfork(void)
 	// Eagerly copy our entire address space into the child.
 	// This is NOT what you should do in your fork implementation.
 
+        //cprintf("duppage From 0x%08x to 0x%08x\n",(uint32_t)UTEXT,(uint32_t)end);
 	for (addr = (uint8_t*) UTEXT; addr < end; addr += PGSIZE)
         {
 		duppage(envid, addr);

@@ -194,7 +194,6 @@ void
 mem_init (void)
 {
     uint32_t cr0;
-    uint32_t test_i;
 
     // Find out how much memory the machine has (npages & npages_basemem).
     i386_detect_memory ();
@@ -257,6 +256,7 @@ mem_init (void)
     // Your code goes here:
     boot_map_region (kern_pgdir, (uintptr_t) UPAGES,
                      npages * sizeof (struct Page), PADDR (pages), PTE_U);
+    //kern_pgdir[PDX(UPAGES)] &=(~PTE_W);
 
     //////////////////////////////////////////////////////////////////////
     // Use the physical memory that 'bootstack' refers to as the kernel
@@ -299,6 +299,13 @@ mem_init (void)
     boot_map_region (kern_pgdir, (uintptr_t) KERNBASE,
                      (uint32_t) (0xffffffff - KERNBASE), (physaddr_t) (0),
                      PTE_W);
+    /*
+    It is not needed. Because one bit is enable in the segment, 
+    this bit makes the Ring0 always could write on any address
+    for(i_cnt = PDX(KERNBASE) ; i_cnt <= PDX(0xffffffff); i_cnt++)
+        kern_pgdir[i_cnt] |= PTE_W;
+    */
+
 
     /*
        Map the envs to UENVS(UTOP)
@@ -306,6 +313,7 @@ mem_init (void)
     boot_map_region (kern_pgdir,
                      (uintptr_t) UENVS,
                      NENV * sizeof (struct Env), PADDR (envs), PTE_U);
+    //kern_pgdir[PDX(UENVS)] &=(~PTE_W);
 
      // Initialize the SMP-related parts of the memory map
      mem_init_mp();
@@ -517,6 +525,7 @@ page_alloc (int alloc_flags)
     ret_page = page_free_list;
     page_free_list = ret_page->pp_link;
     ret_page->pp_link = NIL;
+    nAvailPages--;
     /*
      *Hawx: Increment of Referce Count is not page_alloc's job 
      *ret_page->pp_ref = 1;
@@ -551,6 +560,7 @@ page_free (struct Page *pp)
     }
     pp->pp_link = page_free_list;
     page_free_list = pp;
+    nAvailPages++;
 }
 
 //
@@ -618,7 +628,11 @@ pgdir_walk (pde_t * pgdir, const void *va, int create)
 #ifndef __PT_REF__
             pde_pg->pp_ref++;
 #endif
+//It is the dangerous hole for User level attack.
+//Although the physical page's content cant't be modified by user
+//, the mapping could be changed by the user level.
             pgdir[PDX (va)] = page2pa (pde_pg) | PTE_P | PTE_W;
+//            pgdir[PDX (va)] = page2pa (pde_pg) | PTE_P;
             //Dangerous!          
             //pgdir[PDX (va)] = page2pa (pde_pg) | PTE_P | PTE_W | PTE_U;
         }
@@ -672,7 +686,9 @@ boot_map_region (pde_t * pgdir, uintptr_t va, size_t size, physaddr_t pa,
     uint32_t i;
     pte_t *ptep = NIL;
 
-    //cprintf ("va:0x%x,size:%u,pa:0x%x\n", va, size, pa); //Debug
+#ifdef DEBUG_PMAP_C
+    cprintf ("va:0x%x,size:%u,pa:0x%x\n", va, size, pa); //Debug
+#endif
     size = ROUNDUP (size, PGSIZE);
     for (i = 0 
             ; i < size 
@@ -691,8 +707,17 @@ boot_map_region (pde_t * pgdir, uintptr_t va, size_t size, physaddr_t pa,
         {
             pgdir[PDX (va + i)] |= PTE_U;
         }
+
+        /*
+        if( (PDX(va + i) >= PDX(KERNBASE)) && (PTE_W & perm) && !(PTE_W & pgdir[PDX(va+i)]))
+        {
+            pgdir[PDX (va + i)] |= PTE_W;
+        }
+        */
     }
-    //cprintf("===%u===va+i:%x=pa+i:%x=\n",i,va+i,pa+i); //Debug
+#ifdef DEBUG_PMAP_C
+    cprintf("===%u===va+i:%x=pa+i:%x=nAvailpages:%d\n",i,va+i,pa+i,nAvailPages); //Debug
+#endif
 
 }
 
@@ -748,7 +773,9 @@ page_insert (pde_t * pgdir, struct Page *pp, void *va, int perm)
         return -E_UNSPECIFIED;
     }
 
-    pgdir[PDX (va)] |= perm;
+    pgdir[PDX (va)] |= perm | PTE_P ;//| PTE_W; It is not needed here, 
+                                     //because one segment bit has been set 
+                                     //as to ring0 to be capable to access it. CR0_WP.
     //map it!
     if ((pp->paddr != PTE_ADDR (*ptep)))
     {
@@ -796,6 +823,9 @@ page_insert (pde_t * pgdir, struct Page *pp, void *va, int perm)
     }
 
     *ptep = (page2pa (pp)) | perm | PTE_P;
+#ifdef DEBUG_PMAP_C
+    cprintf("Inserted va:0x%x,*ptep:0x%x\n",(pte_t)va,(pte_t)*ptep);
+#endif
 
 
     return 0;
@@ -815,26 +845,28 @@ page_insert (pde_t * pgdir, struct Page *pp, void *va, int perm)
 struct Page *
 page_lookup (pde_t * pgdir, void *va, pte_t ** pte_store)
 {
-    if(NULL == pte_store)
-        return NULL;
 
-    *pte_store = pgdir_walk (pgdir, va, NO_CREATE);
+    pte_t *tmp_pte;
+    tmp_pte = pgdir_walk (pgdir, va, NO_CREATE);
 
     // Hawx:
     // Coincidence: It could also use the following 2 lines.
-    //              Because when page is used, the PTE_P must be set, It will cause pte not to be 0x0.
+    //              Because when page is used, the PTE_P must be set, 
+    //              It will cause pte not to be 0x0.
     // Correct meaning: Unavailable index.
 
-    if (NIL == *pte_store)
+    if (NIL == tmp_pte)
         return NIL;
 
-    if (!((**pte_store) & PTE_P))
+    if (!((*tmp_pte) & PTE_P))
     {
         cprintf ("The page looked up is not present\n");
         return NIL;
     }
 
-    return pa2page (PTE_ADDR (**pte_store));
+    if(NULL != pte_store)
+        *pte_store = tmp_pte;
+    return pa2page (PTE_ADDR (*tmp_pte));
 }
 
 //

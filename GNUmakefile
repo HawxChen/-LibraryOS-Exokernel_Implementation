@@ -57,8 +57,8 @@ QEMUGDB = $(shell if $(QEMU) -nographic -help | grep -q '^-gdb'; \
 	then echo "-gdb tcp::$(GDBPORT)"; \
 	else echo "-s -p $(GDBPORT)"; fi)
 
-CC	:= $(GCCPREFIX)gcc -pipe
-AS	:= $(GCCPREFIX)as
+CC	:= $(GCCPREFIX)gcc -pipe -g3
+AS	:= $(GCCPREFIX)as -g
 AR	:= $(GCCPREFIX)ar
 LD	:= $(GCCPREFIX)ld
 OBJCOPY	:= $(GCCPREFIX)objcopy
@@ -66,7 +66,7 @@ OBJDUMP	:= $(GCCPREFIX)objdump
 NM	:= $(GCCPREFIX)nm
 
 # Native commands
-NCC	:= gcc $(CC_VER) -pipe
+NCC	:= gcc $(CC_VER) -pipe -g3
 NATIVE_CFLAGS := $(CFLAGS) $(DEFS) $(LABDEFS) -I$(TOP) -MD -Wall
 TAR	:= gtar
 PERL	:= perl
@@ -79,10 +79,10 @@ CFLAGS += -fno-omit-frame-pointer
 CFLAGS += -Wall -Wno-format -Wno-unused -Werror -gstabs -m32
 
 # Add -fno-stack-protector if the option exists.
-CFLAGS += $(shell $(CC) -g3 -fno-stack-protector -E -x c /dev/null >/dev/null 2>&1 && echo -fno-stack-protector)
+CFLAGS += $(shell $(CC) -fno-stack-protector -E -x c /dev/null >/dev/null 2>&1 && echo -fno-stack-protector)
 
 # Common linker flags
-LDFLAGS := -m elf_i386
+LDFLAGS := -m  elf_i386
 
 # Linker flags for JOS user programs
 ULDFLAGS := -T user/user.ld

@@ -1,5 +1,15 @@
 #ifndef JOS_INC_MMU_H
 #define JOS_INC_MMU_H
+/*Debug Compile Optoin*/
+//#define DEBUG_ALL_C_H
+#ifdef DEBUG_ALL_C_H
+#define DEBUG_TRAP_C
+#define DEBUG_SYSCALL_C
+#define DEBUG_LIB_FORK_C
+#define DEBUG_PMAP_C
+#define DEBUG_ENV_C
+#define DEBUG_PMAP_C
+#endif
 
 /*
  * This file contains definitions for the x86 memory management unit (MMU),
@@ -39,6 +49,8 @@
 #define PGOFF(la)	(((uintptr_t) (la)) & 0xFFF)
 // construct linear address from indexes and offset
 #define PGADDR(d, t, o)	((void*) ((d) << PDXSHIFT | (t) << PTXSHIFT | (o)))
+#define PGNUM2PDX(_n) (((_n) >> (PT_DIGITS)))
+#define PGNUM2LA(_n) (((_n) << (PTXSHIFT))) //LA: Linear Address
 // Page directory and page table constants.
 #define NPDENTRIES	1024        // page directory entries per page directory
 #define NPTENTRIES	1024        // page table entries per page table
@@ -47,6 +59,8 @@
 /*
  * Hawx: PTSIZE is 2^22, 0x400000.
  */
+#define PT_DIGITS       10
+#define PD_DIGITS       10
 #define PTSIZE		(PGSIZE*NPTENTRIES) // bytes mapped by a page directory entry
 #define PTSHIFT		22          // log2(PTSIZE)
 #define PTXSHIFT	12          // offset of PTX in a linear address

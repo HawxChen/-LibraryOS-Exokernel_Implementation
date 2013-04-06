@@ -93,7 +93,9 @@ sys_exofork(void)
     // will appear to return 0.
 
     // LAB 4: Your code here.
-    cprintf("===Execute in sys_exofork===\n");
+#ifdef DEBUG_SYSCALL_C
+    cprintf("===[0x%x]Execute in sys_exofork===\n",curenv->env_id);
+#endif
     struct Env *child_env = NULL;
     int ret_value;
     ret_value = env_alloc(&child_env,(curenv)->env_id);
@@ -111,21 +113,23 @@ sys_exofork(void)
     child_env->env_tf.tf_regs.reg_eax = 0;
     //cprintf("===Ready to reutrn from exofork,child's envid:0x%08x,child's eax:0x%08x===\n" ,child_env->env_id, child_env->env_tf.tf_regs.reg_eax); //Debug
     
-    //Hawx:
-    //Child never execute here.
-    //1. Here is the Kernel mode's stack, 
-    //   we just copy the env_tf into child's address space 
-    //   to fake pretending calling exofork
-    //2. As for the return value, user process to distinguish between parent and child,
-    //   For Parent part, just by the code "return child_env->env_id"
-    //   For Child part, just pass the return value by the eax assignment.
     if(child_env->env_id == (curenv)->env_id)
     {
-        cprintf("===Child Start===\n");
+        //Hawx:
+        //Child never execute here.
+        //1. Here is the Kernel mode's stack, 
+        //   we just copy the env_tf into child's address space 
+        //   to fake pretending calling exofork
+        //2. As for the return value, user process to distinguish between parent and child,
+        //   For Parent part, just by the code "return child_env->env_id"
+        //   For Child part, just pass the return value by the eax assignment.
+        cprintf("Here is never executed===Child Start===\n");
         return 0;
     }
 
-    cprintf("===Parent Start===\n");
+#ifdef DEBUG_SYSCALL_C
+    cprintf("===Parent:0x%x finish forked===\n",(curenv->env_id));
+#endif
     return child_env->env_id;
 }
 
@@ -146,7 +150,9 @@ sys_env_set_status(envid_t envid, int status)
     // envid's status.
 
     // LAB 4: Your code here.
-    cprintf("===Execute in sys_env_set_status===\n");
+#ifdef DEBUG_SYSCALL_C
+    cprintf("===[0x%x]Execute in sys_env_set_status===\n",curenv->env_id);
+#endif
     struct Env *e;
     if(envid2env(envid,&e,1))
     {
@@ -176,11 +182,16 @@ sys_env_set_pgfault_upcall(envid_t envid, void *func)
     // LAB 4: Your code here.
     struct Env* e;
     if(envid2env(envid,&e,1))
+    {
         return -E_BAD_ENV;
+    }
 
     /*Hawx:
      * Should here need the precaution about like evilhandler.c, and faulthandle.c
      * ?*/
+#ifdef DEBUG_SYSCALL_C
+    cprintf("envid:[0x%x] set pgfault_upcall:0x%x\n", e->env_id, (unsigned int)func);
+#endif
     e->env_pgfault_upcall = func;
     return 0;
 }
@@ -190,7 +201,8 @@ sys_env_set_pgfault_upcall(envid_t envid, void *func)
 // The page's contents are set to 0.
 //
 // If a page is already mapped at 'va', that page is unmapped as a
-// side effect.(Hawx: What's the other way to handle that.)
+// side effect.(Hawx: What's the other way to handle that.
+// Don't need to handle it. Just unmap that page.)
 //
 // perm -- PTE_U | PTE_P must be set, PTE_AVAIL | PTE_W may or may not be set,
 //         but no other bits may be set.  See PTE_SYSCALL in inc/mmu.h.
@@ -213,14 +225,17 @@ sys_page_alloc(envid_t envid, void *va, int perm)
     //   If page_insert() fails, remember to free the page you
     //   allocated!
     // LAB 4: Your code here.
-    cprintf("===Execute in sys_page_alloc===\n");
+#ifdef DEBUG_SYSCALL_C
+    cprintf("===[0x%x]Execute in sys_page_alloc===\n",curenv->env_id);
+#endif
     struct Page* page_need = NULL;
     struct Env *e;
 
     if(envid2env(envid,&e,1))
         return -E_BAD_ENV;
 
-    if(((int)va >= UTOP) || (perm & ~PTE_SYSCALL) )
+    if((((int)va) >= UTOP) || (perm & ~PTE_SYSCALL) )
+
     {
         return -E_INVAL;
     }
@@ -239,6 +254,7 @@ sys_page_alloc(envid_t envid, void *va, int perm)
 
     return 0;
 }
+static int sys_page_unmap(envid_t envid, void *va);
 
 // Map the page of memory at 'srcva' in srcenvid's address space
 // at 'dstva' in dstenvid's address space with permission 'perm'.
@@ -268,32 +284,54 @@ sys_page_map(envid_t srcenvid/*In fork: child*/, void *srcva,
     //   check the current permissions on the page.
 
     // LAB 4: Your code here.
-    cprintf("===Execute in sys_page_map===\n");
+#ifdef DEBUG_SYSCALL_C
+    cprintf("===[0x%x]Execute in sys_page_map===perm:0x%x\n",curenv->env_id,perm);
+#endif
     pte_t* src_pte = NIL;
     struct Page* src_page;
     struct Env *src_e;
     struct Env *dst_e;
 
     if(envid2env(srcenvid,&src_e,1) 
-            || envid2env(dstenvid,&dst_e,0) 
-            || (perm & (~PTE_SYSCALL)))
+            || envid2env(dstenvid,&dst_e,0))
+//            || (perm & (~PTE_SYSCALL)))
+    {
+        cprintf("envid2env\n");
         return -E_BAD_ENV;
+    }
 
     if((check_addr_scale((uint32_t)srcva,0,(uint32_t)UTOP))
             || (check_addr_scale((uint32_t)dstva,0,(uint32_t)UTOP))
             || PGOFF(srcva)
             || PGOFF(dstva))
+    {
+        cprintf("check_addr_scale\n");
         return -E_INVAL;
+    }
 
     if((!(src_page = page_lookup(src_e->env_pgdir,srcva,&src_pte))))
+    {
+        cprintf("Error: (!(src_page = page_lookup(src_e->env_pgdir,srcva,&src_pte)))\n");
         return -E_INVAL;
+    }
 
     // Perm has the same restrictions as in sys_page_alloc, except
     // that it also must not grant write access to a read-only
     // page.
     if( (!((*src_pte) & PTE_W)) && (perm & PTE_W))
+    {
+        cprintf("Error: (!((*src_pte) & PTE_W)) && (perm & PTE_W)\n");
         return -E_INVAL;
+    }
 
+    //perm = perm | PTE_P | PTE_U;
+    /*It is not needed here,
+     *because page_insert has considered the condition for repeated same mapping.
+    if(NIL != page_lookup(dst_e->env_pgdir, dstva, NULL))
+    {
+        sys_page_unmap(dstenvid, dstva);
+    }
+    */
     return page_insert(dst_e->env_pgdir,src_page,dstva,perm);
 }
 
@@ -309,7 +347,9 @@ sys_page_unmap(envid_t envid, void *va)
 {
     // Hint: This function is a wrapper around page_remove().
     // LAB 4: Your code here.
-    cprintf("===Execute in sys_page_unmap===\n");
+#ifdef DEBUG_SYSCALL_C
+    cprintf("===[0x%x]Execute in sys_page_unmap===\n",curenv->env_id);
+#endif
     struct Env* e;
     if(envid2env(envid,&e,1))
         return -E_BAD_ENV;

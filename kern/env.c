@@ -472,6 +472,9 @@ load_icode (struct Env *e, uint8_t * binary, size_t size)
             return;
         }
 
+#ifdef DEBUG_ENV_C
+        cprintf(">>> ph->p_va:0x%08x %d Bytes pages:%d<<<\n",(uint32_t)ph->p_va, (uint32_t) ph->p_memsz,(uint32_t) ph->p_memsz%4096 ? ph->p_memsz/4096 +1 :ph->p_memsz/4096);
+#endif
         region_alloc (e, (void *) ph->p_va, ph->p_memsz);
         memmove ((void *) ph->p_va, (void *) (binary + ph->p_offset),
                  ph->p_filesz);
@@ -685,8 +688,8 @@ env_run (struct Env *e)
     curenv->env_status = ENV_RUNNING;
     curenv->env_runs++;
     //cprintf("trap's  curenv_id:0x%8x, cpunum:%d\n",curenv->env_id,cpunum()); //Debug
-    lcr3 (PADDR (curenv->env_pgdir));
     unlock_kernel();
+    lcr3 (PADDR (curenv->env_pgdir));
     env_pop_tf (&curenv->env_tf);
 
     panic ("env_run not yet implemented");

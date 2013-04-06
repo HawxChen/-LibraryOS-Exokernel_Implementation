@@ -21,17 +21,16 @@ mp_main @ kern/init.c
     APs was setup, and APs will execute on this routine.
 
 Questions:
-    1. APs' init code should be in 4K byte aligment. But why is MPENTRY_PADDR = 0x7000?
-
-    2. APs' init routine at address according to STARTUP | (0x7000 >> 12)
+*    1. APs' init code should be in 4K byte aligment. But why is MPENTRY_PADDR = 0x7000?
+*    2. APs' init routine at address according to STARTUP | (0x7000 >> 12)
                                                            -------------
                                                                 VV  ==> translate to CS:IP = VV00:0000h or 000VV000h 
                                                                                              or they are the same. 
-    3.percpu_kstacks[NCPU][KSTKSIZE] <<< where to init it
+*    3.percpu_kstacks[NCPU][KSTKSIZE] <<< where to init it
        It is the global varable defined at kern/mpconfig.c.
        And map the CPU_i's kernel stack bottom's virtual address, into percpukstack[i]
 
-    4.  at kern/mpentry.S
+*    4.  at kern/mpentry.S
         4.1
 	# Call mp_main().  (Exercise for the reader: why the indirect call?)
 	movl    $mp_main, %eax
@@ -83,10 +82,56 @@ Questions:
         // an extra word between the current top of the exception stack and
         // the new stack frame because the exception stack _is_ the trap-time
         // stack.
-    10.Make sure you understand why user/faultalloc and user/faultallocbad behave differently.
+ *   10.Make sure you understand why user/faultalloc and user/faultallocbad behave differently.
         user/faultalloc.c is the recursive page fault.
         Just Look! lenth of 100 chars cross pages.
 	cprintf("%s\n", (char*)0xCafeBffe);
 	snprintf((char*) addr, 100, "this string was faulted in at %x", addr);
 
-        
+    11. Paging bit donesn't enable PTE_W, Why is kernel mode capable of writing to it?
+        R, the 'Read/Write' permissions flag. 
+        If the bit is set, the page is read/write. 
+        Otherwise when it is not set, the page is read-only. 
+        The WP bit in CR0 determines if this is only applied to userland
+        , always giving the kernel write access (the default) 
+        or both userland and the kernel (see Intel Manuals 3A 2-20).
+        In kern/entry.S:
+            # Turn on paging.
+            movl	%cr0, %eax
+            orl	$(CR0_PE|CR0_PG|CR0_WP), %eax
+            movl	%eax, %cr0
+  12. Is it possible to read stab?! Look user/user.ld
+
+  13. Does It need to set parents's page map as COW, too?
+      *** Re-read the page13 at Lab4 ***
+  *14. In lib/fork.c, WHY?
+      Compiled Pass:  thisenv = &envs[ENVX(sys_getenvid())]
+      Compiled Error: child_env = &envs[ENVX(child_envid)];
+      Compiled Pass: child_env = (struct Env *) &envs[ENVX(child_envid)];
+      Is it the const volatile type caused?
+
+ *15.where to pass the evilhandler faulthandler...
+ *16.Set about pgfault hander to child
+ *17.About security...
+    A. In the kern/pmap.c: pgdir_walk(...)
+        Dangerous hole.
+        PTE_W at Page Directory, Should I set allocate page_dir entry's PTE_W proper::t
+        use other's result to verify my question.
+    B. In the kern/pmap.c: page_insert(...)
+        pgdir[PDX(va)] |= perm | PTE_P, It should consider about setting perm or not.
+
+    Now My answer has 2 different ways
+    way1. just in mem_init(...): 
+          Only correct the problem to disable the permission for user to change its own mapping .
+          kern_pgdir[PDX(UPAGES)] &=(~PTE_W);
+          kern_pgdir[PDX(UENVS)] &=(~PTE_W);
+    way2. disable the A.
+          It maybe touch deeply about the permssion to change page's content 
+          not eaqul to own the permission to change page's mapping
+    
+ 18.in kern/syscall.c: sys_page_allocan
+    If a page is already mapped at 'va', that page is unmapped as a
+    // side effect.(Hawx: What's the other way to handle that.     
+    // Don't need to handle it. Just unmap that page.
+
+    
