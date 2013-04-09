@@ -96,7 +96,7 @@ envid2env (envid_t envid, struct Env **env_store, bool checkperm)
     e = &envs[ENVX (envid)];
     if (e->env_status == ENV_FREE || e->env_id != envid)
     {
-        cprintf("===Not Match: e->env_id:0x%08x/envid:0x%08x===\n",e->env_id,envid);
+        cprintf("!!! envid2env's Not Match: e->env_id:0x%08x/envid:0x%08x !!!\n",e->env_id,envid);
         *env_store = 0;
         return -E_BAD_ENV;
     }
@@ -108,6 +108,7 @@ envid2env (envid_t envid, struct Env **env_store, bool checkperm)
     // or an immediate child of the current environment.
     if (checkperm && e != curenv && e->env_parent_id != curenv->env_id)
     {
+        cprintf("!!! envid2env's Error in checkperm !!!\n");
         *env_store = 0;
         return -E_BAD_ENV;
     }
@@ -301,9 +302,11 @@ env_alloc (struct Env **newenv_store, envid_t parent_id)
     /*Prob. Why does in load_icode's instruction mean tf_esp = USTACKTOP - PGSIZE */
 	e->env_tf.tf_cs = GD_UT | 3;
 	// You will set e->env_tf.tf_eip later.
+        // In the load_icode. It sets the tf_eip.
 
-	// Enable interrupts while in user mode.
 	// LAB 4: Your code here.
+	// Enable interrupts while in user mode.
+        e->env_tf.tf_eflags = e->env_tf.tf_eflags | FL_IF;
 
 	// Clear the page fault handler until user installs one.
 	e->env_pgfault_upcall = 0;
@@ -687,7 +690,10 @@ env_run (struct Env *e)
     curenv = e;
     curenv->env_status = ENV_RUNNING;
     curenv->env_runs++;
+//  curenv->env_tf.tf_eflags =   FL_IF |  curenv->env_tf.tf_eflags;
     //cprintf("trap's  curenv_id:0x%8x, cpunum:%d\n",curenv->env_id,cpunum()); //Debug
+
+    //No one can ensure the new feature in the near future that kernel mapping's physical page won't be different from the user mapping's phsycal page.
     unlock_kernel();
     lcr3 (PADDR (curenv->env_pgdir));
     env_pop_tf (&curenv->env_tf);

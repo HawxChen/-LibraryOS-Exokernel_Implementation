@@ -79,8 +79,13 @@ trap_init (void)
         SETGATE (idt[i], TRAP_N, GD_KT, vects[i], DPL_KERN);
     }
 
+#ifdef bug_017
     SETGATE (idt[T_SYSCALL], TRAP_Y, GD_KT, vects[T_SYSCALL], DPL_USER);
     SETGATE (idt[T_BRKPT], TRAP_Y, GD_KT, vects[T_BRKPT], DPL_USER);
+#else
+    SETGATE (idt[T_SYSCALL], TRAP_N, GD_KT, vects[T_SYSCALL], DPL_USER);
+    SETGATE (idt[T_BRKPT], TRAP_N, GD_KT, vects[T_BRKPT], DPL_USER);
+#endif
 
     // Per-CPU setup 
     //Init BSP: main processor.
@@ -205,61 +210,94 @@ trap_dispatch (struct Trapframe *tf)
 {
     // Handle processor exceptions.
     // LAB 3: Your code here.
-    switch (tf->tf_trapno)
+    if(tf->tf_trapno >= (IRQ_OFFSET+IRQ_TIMER) && tf->tf_trapno <= IRQ_OFFSET_HANDLE_MAX)
     {
-    case T_PGFLT:
-        page_fault_handler (tf);
-        break;
-    case T_BRKPT:
-        breakpoint_handler (tf);
-        break;
-    case T_SYSCALL:
-        //Extract the parameters
-        XARG_SYSCALL_PRAR (reg_eax) = syscall (XARG_SYSCALL_PRAR (reg_eax),
-                                               XARG_SYSCALL_PRAR (reg_edx),
-                                               XARG_SYSCALL_PRAR (reg_ecx),
-                                               XARG_SYSCALL_PRAR (reg_ebx),
-                                               XARG_SYSCALL_PRAR (reg_edi),
-                                               XARG_SYSCALL_PRAR (reg_esi));
-        break;
-    default:
-        // Unexpected trap: The user process or the kernel has a bug.
-        print_trapframe (tf);
-        if (tf->tf_cs == GD_KT)
-            panic ("unhandled trap in kernel");
-        else
+        switch(tf->tf_trapno - IRQ_OFFSET)
         {
-            env_destroy (curenv);
-            return;
+            case IRQ_TIMER:
+//                cprintf("curenv->env_id:0x%x is in\n",curenv->env_id);
+                lapic_eoi(); //bug_020
+                sched_yield();
+                break;
+            case IRQ_KBD:
+            case IRQ_SERIAL:
+            case IRQ_SPURIOUS:
+            case IRQ_IDE:
+            case IRQ_ERROR:
+#ifndef BLOCK_ANNOY_INFO
+                print_trapframe(tf);
+#endif
+                break;
+            default:
+#ifndef BLOCK_ANNOY_INFO
+                print_trapframe(tf);
+#endif
+                if(tf->tf_cs == GD_KT)
+                    panic("unhandled trap in kernel");
+                else
+                    panic("unhandled trap in user");
+                    env_destroy(curenv);
+                break;
         }
-        break;
+    }
+    else
+    {
+        switch (tf->tf_trapno)
+        {
+            case T_PGFLT:
+                page_fault_handler (tf);
+                break;
+            case T_BRKPT:
+                breakpoint_handler (tf);
+                break;
+            case T_SYSCALL:
+                //Extract the parameters
+                XARG_SYSCALL_PRAR (reg_eax) = syscall (XARG_SYSCALL_PRAR (reg_eax),
+                        XARG_SYSCALL_PRAR (reg_edx),
+                        XARG_SYSCALL_PRAR (reg_ecx),
+                        XARG_SYSCALL_PRAR (reg_ebx),
+                        XARG_SYSCALL_PRAR (reg_edi),
+                        XARG_SYSCALL_PRAR (reg_esi));
+                break;
+            default:
+                // Unexpected trap: The user process or the kernel has a bug.
+                print_trapframe (tf);
+                if (tf->tf_cs == GD_KT)
+                    panic ("unhandled trap in kernel");
+                else
+                {
+                    env_destroy (curenv);
+                    return;
+                }
+                break;
+        }
     }
 
 #if 0
-	// Handle processor exceptions.
-	// LAB 3: Your code here.
+    // Handle processor exceptions.
+    // LAB 3: Your code here.
 
-	// Handle spurious interrupts
-	// The hardware sometimes raises these because of noise on the
-	// IRQ line or other reasons. We don't care.
-	if (tf->tf_trapno == IRQ_OFFSET + IRQ_SPURIOUS) {
-		cprintf("Spurious interrupt on irq 7\n");
-		print_trapframe(tf);
-		return;
-	}
+    // Handle spurious interrupts
+    // The hardware sometimes raises these because of noise on the
+    // IRQ line or other reasons. We don't care.
+    if (tf->tf_trapno == IRQ_OFFSET + IRQ_SPURIOUS) {
+        cprintf("Spurious interrupt on irq 7\n");
+        print_trapframe(tf);
+        return;
+    }
 
-	// Handle clock interrupts. Don't forget to acknowledge the
-	// interrupt using lapic_eoi() before calling the scheduler!
-	// LAB 4: Your code here.
+    // Handle clock interrupts. Don't forget to acknowledge the
+    // interrupt using lapic_eoi() before calling the scheduler!
+    // LAB 4: Your code here.
 
-	// Unexpected trap: The user process or the kernel has a bug.
-	print_trapframe(tf);
-	if (tf->tf_cs == GD_KT)
-		panic("unhandled trap in kernel");
-	else {
-		env_destroy(curenv);
-		return;
-	}
+    // Unexpected trap: The user process or the kernel has a bug.
+    print_trapframe(tf);
+    if (tf->tf_cs == GD_KT)
+        panic("unhandled trap in kernel");
+    else {
+        env_destroy(curenv);
+        return;
+    }
 #endif
 }
 
@@ -268,6 +306,9 @@ trap (struct Trapframe *tf)
 {
 	// The environment may have set DF and some versions
 	// of GCC rely on DF being clear
+#ifdef bug_017
+	asm volatile("cli");
+#endif
 	asm volatile("cld" ::: "cc");
 
 	// Halt the CPU if some other CPU has called panic()
@@ -275,17 +316,21 @@ trap (struct Trapframe *tf)
 	if (panicstr)
 		asm volatile("hlt");
 
-	// Check that interrupts are disabled.  If this assertion
-	// fails, DO NOT be tempted to fix it by inserting a "cli" in
-	// the interrupt path.
-	assert(!(read_eflags() & FL_IF));
 
+#ifdef bug_017
+        //lock_kernel();
+#endif
+//        if(tf->tf_trapno == (IRQ_OFFSET+IRQ_TIMER) && tf->tf_trapno <= IRQ_OFFSET_HANDLE_MAX)
+//            cprintf("-----Start---\n");
+//        assert(!(read_eflags() & FL_IF));
 	if ((tf->tf_cs & 3) == 3) {
+#ifndef bug_017
+                lock_kernel();
+#endif
 		// Trapped from user mode.
 		// Acquire the big kernel lock before doing any
 		// serious kernel work.
 		// LAB 4: Your code here.
-                lock_kernel();
 		assert(curenv);
                 //cprintf("///Trap from USER mode\\\\\\\n"); //Debug
 		// Garbage collect if current enviroment is a zombie
@@ -304,7 +349,11 @@ trap (struct Trapframe *tf)
 	}
         else
         {
-                //cprintf("\\\\\\Trap from KERNEL mode///\n"); //Debug
+            //cprintf("\\\\\\Trap from KERNEL mode///\n"); //Debug
+            // Check that interrupts are disabled.  If this assertion
+            // fails, DO NOT be tempted to fix it by inserting a "cli" in
+            // the interrupt path.
+            assert(!(read_eflags() & FL_IF));
         }
 
 	// Record that tf is the last real trapframe so
@@ -312,6 +361,8 @@ trap (struct Trapframe *tf)
 	last_tf = tf;
 
 	// Dispatch based on what type of trap occurred
+//        if(tf->tf_trapno >= (IRQ_OFFSET+IRQ_TIMER) && tf->tf_trapno <= IRQ_OFFSET_HANDLE_MAX)
+//        if(tf->tf_trapno == (IRQ_OFFSET+IRQ_TIMER)) cprintf("             Done---\n");
 	trap_dispatch(tf);
 
 	// If we made it to this point, then no other environment was

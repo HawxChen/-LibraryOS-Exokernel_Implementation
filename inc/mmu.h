@@ -1,16 +1,20 @@
 #ifndef JOS_INC_MMU_H
 #define JOS_INC_MMU_H
 /*Debug Compile Optoin*/
+#define TESTING_GRADE_PURPOSE
 //#define DEBUG_ALL_C_H
 #ifdef DEBUG_ALL_C_H
 #define DEBUG_TRAP_C
 #define DEBUG_SYSCALL_C
 #define DEBUG_LIB_FORK_C
-#define DEBUG_PMAP_C
 #define DEBUG_ENV_C
 #define DEBUG_PMAP_C
 #endif
 
+#define BLOCK_ANNOY_INFO
+
+//Bug reproduce 
+//#define bug_017
 /*
  * This file contains definitions for the x86 memory management unit (MMU),
  * including paging- and segmentation-related data structures and constants,

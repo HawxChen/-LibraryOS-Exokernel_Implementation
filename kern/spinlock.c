@@ -16,6 +16,10 @@ struct spinlock kernel_lock = {
 #endif
 };
 
+#ifdef bug_017
+uint32_t lock_cnt = 0;
+#endif
+
 #ifdef DEBUG_SPINLOCK
 // Record the current call stack in pcs[] by following the %ebp chain.
 static void
@@ -89,6 +93,13 @@ spin_unlock(struct spinlock *lk)
 		uint32_t pcs[10];
 		// Nab the acquiring EIP chain before it gets released
 		memmove(pcs, lk->pcs, sizeof pcs);
+#ifdef bug_017
+                if(lk->cpu == 0)
+                {
+                    cprintf("Total lock_cnt:%d\n",lock_cnt);
+                    panic("here\n");
+                }
+#endif
 		cprintf("CPU %d cannot release %s: held by CPU %d\nAcquired at:", 
 			cpunum(), lk->name, lk->cpu->cpu_id);
 		for (i = 0; i < 10 && pcs[i]; i++) {

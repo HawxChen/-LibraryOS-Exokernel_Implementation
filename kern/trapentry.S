@@ -41,7 +41,7 @@
 	.type name, @function;						\
 	.align 2;							\
 	name:								\
-	pushl $0;							\
+	pushl $0;               /*Push the fake error code.*/		\
 	pushl $(num);							\
 	jmp _alltraps
 

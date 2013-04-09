@@ -37,6 +37,7 @@ sched_yield(void)
         else if(thiscpu->cpu_env->env_status == ENV_RUNNING)
         { /*Note: It might check for future needed state*/
             thiscpu->cpu_env->env_status = ENV_RUNNABLE;
+            i = (curenv - envs) + 1;//bug_019
         }
 
         if(i == -1)
@@ -62,20 +63,21 @@ sched_yield(void)
 	// For debugging and testing purposes, if there are no
 	// runnable environments other than the idle environments,
 	// drop into the kernel monitor.
+#ifdef TESTING_GRADE_PURPOSE
 	for (i = 0; i < NENV; i++) {
 		if (envs[i].env_type != ENV_TYPE_IDLE &&
 		    (envs[i].env_status == ENV_RUNNABLE ||
                      envs[i].env_status == ENV_RUNNING))
                 {
-                    //cprintf("===env %d is the GUY===\n",i); //Debug
+//                    cprintf("===env %d is the GUY===\n",i); //Debug
                     break;
                 }
 	}
 	if (i == NENV) {
 		cprintf("No more runnable environments!\n");
-		while (1)
-			monitor(NULL);
+		while (1) monitor(NULL);
 	}
+#endif
 
         // Run this CPU's idle environment when nothing else is runnable.'
         if(cnt == NENV)
@@ -88,5 +90,6 @@ sched_yield(void)
             //It is never returned here.
             cprintf("CPU %d is back\n",cpunum());
         }
+
 
 }

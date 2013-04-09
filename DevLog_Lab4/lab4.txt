@@ -20,6 +20,9 @@ boot_aps @ kern/init.c
 mp_main @ kern/init.c
     APs was setup, and APs will execute on this routine.
 
+pic_init @ kern/picirq.c
+    maps IRQs 0~15 to IDT 16(32~47) entries from IRQ_OFFSET to IRQ_OFFSET+15
+
 Questions:
 *    1. APs' init code should be in 4K byte aligment. But why is MPENTRY_PADDR = 0x7000?
 *    2. APs' init routine at address according to STARTUP | (0x7000 >> 12)

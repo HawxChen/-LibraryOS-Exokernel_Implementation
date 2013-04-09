@@ -79,7 +79,8 @@ i386_init (void)
     //ENV_CREATE(user_faultalloc, ENV_TYPE_USER);
     //ENV_CREATE(user_faultnostack, ENV_TYPE_USER);
     //ENV_CREATE (user_faultread, ENV_TYPE_USER);
-    ENV_CREATE (user_forktree, ENV_TYPE_USER);
+    //ENV_CREATE (user_forktree, ENV_TYPE_USER);
+    ENV_CREATE (user_spin, ENV_TYPE_USER);
     
 #endif // TEST*
     // Schedule and run the first user environment!
@@ -138,6 +139,8 @@ mp_main(void)
     //
     // Your code here:
     lock_kernel();
+//STI should not be coded here, because external INT is disable in the kernel mode.
+//  asm volatile("sti");
     sched_yield();
 
     // Remove this after you finish Exercise 4

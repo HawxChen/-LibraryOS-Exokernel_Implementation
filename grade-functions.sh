@@ -38,7 +38,7 @@ run () {
 	fi
 
 	qemucommand="$qemu -nographic $qemuopts -serial file:jos.out -monitor null -no-reboot $qemuextra"
-#	qemucommand="$qemu -nographic $qemuopts -serial file:jos.out  -no-reboot $qemuextra"
+#	qemucommand="$qemu -nographic $qemuopts -serial file:jos.out  -no-reboot"
 	if $verbose; then
 		echo $qemucommand 1>&2
 	fi

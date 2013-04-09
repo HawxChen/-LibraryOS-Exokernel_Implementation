@@ -151,11 +151,13 @@ sys_env_set_status(envid_t envid, int status)
 
     // LAB 4: Your code here.
 #ifdef DEBUG_SYSCALL_C
-    cprintf("===[0x%x]Execute in sys_env_set_status===\n",curenv->env_id);
+    cprintf("===[0x%x]Execute in sys_env_set_status===env_id:0x%x,status:0x%x\n"\
+            ,curenv->env_id,envid, status);
 #endif
     struct Env *e;
     if(envid2env(envid,&e,1))
     {
+        
         return -E_BAD_ENV;
     }
     if(ENV_RUNNABLE != e->env_status && ENV_NOT_RUNNABLE !=e->env_status)
@@ -164,6 +166,10 @@ sys_env_set_status(envid_t envid, int status)
     }
 
     e->env_status = status;
+
+#ifdef DEBUG_SYSCALL_C
+    cprintf("Enable: index:%d,envid:0x%x, status=0x%x\n",e-envs,e->env_id,e->env_status );
+#endif
     return 0;
 
 }
@@ -348,7 +354,15 @@ sys_page_unmap(envid_t envid, void *va)
     // Hint: This function is a wrapper around page_remove().
     // LAB 4: Your code here.
 #ifdef DEBUG_SYSCALL_C
+    int i= 0;
     cprintf("===[0x%x]Execute in sys_page_unmap===\n",curenv->env_id);
+    for(i=0 ;i < NENV ; i++)
+    {
+        if(envs[i].env_status != ENV_FREE && (!(envs[i].env_tf.tf_eflags & FL_IF)))
+        {
+            cprintf("i:%d,envid:0x%x !!!\n", i, envs[i].env_id);
+        }
+    }
 #endif
     struct Env* e;
     if(envid2env(envid,&e,1))
