@@ -22,9 +22,22 @@
 int32_t
 ipc_recv(envid_t *from_env_store, void *pg, int *perm_store)
 {
-	// LAB 4: Your code here.
-	panic("ipc_recv not implemented");
-	return 0;
+    // LAB 4: Your code here.
+
+    //How to distinguish 0 and NULL.
+
+    int32_t ret = 0;
+    ret = sys_ipc_recv(pg == NULL ? IPC_NO_PAGE : pg);
+
+    if(from_env_store != NULL){
+       *from_env_store = (ret == 0 ? thisenv->env_ipc_from : 0);
+    }
+
+    if(perm_store != NULL){
+        *perm_store = (ret == 0 ? thisenv->env_ipc_perm : 0);
+    }
+
+    return ret == 0 ? thisenv->env_ipc_value: ret;
 }
 
 // Send 'val' (and 'pg' with 'perm', if 'pg' is nonnull) to 'toenv'.
@@ -38,8 +51,23 @@ ipc_recv(envid_t *from_env_store, void *pg, int *perm_store)
 void
 ipc_send(envid_t to_env, uint32_t val, void *pg, int perm)
 {
-	// LAB 4: Your code here.
-	panic("ipc_send not implemented");
+    // LAB 4: Your code here.
+    int32_t ret = 0;
+#ifdef DEBUG_SYSCALL_C
+    cprintf("===[0x%x]Execute in ipc_try_send: %d===\n",thisenv->env_id,val);
+#endif
+    do{
+        sys_yield();
+        ret = sys_ipc_try_send(
+            to_env,
+            val,
+            pg == NULL ? IPC_NO_PAGE : pg ,
+            pg == NULL ? 0 :perm);
+    }while(-E_IPC_NOT_RECV == ret);
+
+    if(ret != 0 )
+        panic("envid:0x%d's ipc sending to 0x%x failed ret:0x%x\n",
+                thisenv->env_id, to_env, ret);
 }
 
 // Find the first environment of the given type.  We'll use this to
