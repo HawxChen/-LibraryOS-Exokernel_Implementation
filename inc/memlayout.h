@@ -137,6 +137,7 @@
 
 // Next page left invalid to guard against exception stack overflow; then:
 // Top of normal user stack
+#define IPC_NO_PAGE ((void*)0xaabbccdd)
 #define USTACKTOP	(UTOP - 2*PGSIZE)
 
 // Where user programs generally begin

@@ -101,7 +101,7 @@ sys_exofork(void)
     ret_value = env_alloc(&child_env,(curenv)->env_id);
     if(ret_value)
     {
-        cprintf("===Error in sys_exofork===%e\n",ret_value);
+        cprintf("!!! Error in sys_exofork !!!%e\n",ret_value);
         return ret_value;
     }
 
@@ -128,7 +128,7 @@ sys_exofork(void)
     }
 
 #ifdef DEBUG_SYSCALL_C
-    cprintf("===Parent:0x%x finish forked===\n",(curenv->env_id));
+    cprintf("===Parent:0x%x finish sys_exofork===\n",(curenv->env_id));
 #endif
     return child_env->env_id;
 }
@@ -291,7 +291,9 @@ sys_page_map(envid_t srcenvid/*In fork: child*/, void *srcva,
 
     // LAB 4: Your code here.
 #ifdef DEBUG_SYSCALL_C
-    cprintf("===[0x%x]Execute in sys_page_map===perm:0x%x\n",curenv->env_id,perm);
+    cprintf("===[0x%x]Execute in sys_page_map,perm:0x%x\n",curenv->env_id,perm);
+    cprintf("   srcenvid:0x%04x,srcva:0x%08x --> dstenvid:0x%04x, dstva:0x%08x ===\n",
+            srcenvid,(uint32_t)srcva,dstenvid,(uint32_t)dstva);
 #endif
     pte_t* src_pte = NIL;
     struct Page* src_page;
@@ -302,7 +304,7 @@ sys_page_map(envid_t srcenvid/*In fork: child*/, void *srcva,
             || envid2env(dstenvid,&dst_e,0))
 //            || (perm & (~PTE_SYSCALL)))
     {
-        cprintf("envid2env\n");
+        cprintf("!!! envid2env !!!\n");
         return -E_BAD_ENV;
     }
 
@@ -311,13 +313,13 @@ sys_page_map(envid_t srcenvid/*In fork: child*/, void *srcva,
             || PGOFF(srcva)
             || PGOFF(dstva))
     {
-        cprintf("check_addr_scale\n");
+        cprintf("!!! check_addr_scale !!!\n");
         return -E_INVAL;
     }
 
     if((!(src_page = page_lookup(src_e->env_pgdir,srcva,&src_pte))))
     {
-        cprintf("Error: (!(src_page = page_lookup(src_e->env_pgdir,srcva,&src_pte)))\n");
+        cprintf("!!! Error: (!(src_page = page_lookup(src_e->env_pgdir,srcva,&src_pte))) !!!\n");
         return -E_INVAL;
     }
 
@@ -326,7 +328,7 @@ sys_page_map(envid_t srcenvid/*In fork: child*/, void *srcva,
     // page.
     if( (!((*src_pte) & PTE_W)) && (perm & PTE_W))
     {
-        cprintf("Error: (!((*src_pte) & PTE_W)) && (perm & PTE_W)\n");
+        cprintf("!!! Error: (!((*src_pte) & PTE_W)) && (perm & PTE_W) !!!\n");
         return -E_INVAL;
     }
 
@@ -399,6 +401,13 @@ sys_page_unmap(envid_t envid, void *va)
 // If the sender wants to send a page but the receiver isn't asking for one,
 // then no page mapping is transferred, but no error occurs.
 // The ipc only happens when no errors occur.
+// But what's about In the reverse direction?
+// ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+// If the receiver requires the "pg" map, but the sender doesn't give.
+// It should be OK. I guess.
+// Receiver could use the perm returned to check it transferred or not.
+
 //
 // Returns 0 on success, < 0 on error.
 // Errors are:
@@ -406,6 +415,9 @@ sys_page_unmap(envid_t envid, void *va)
 //		(No need to check permissions.)
 //	-E_IPC_NOT_RECV if envid is not currently blocked in sys_ipc_recv,
 //		or another environment managed to send first.
+//                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+//                 Does it imply the sequential condition?
+
 //	-E_INVAL if srcva < UTOP but srcva is not page-aligned.
 //	-E_INVAL if srcva < UTOP and perm is inappropriate
 //		(see sys_page_alloc).
@@ -418,8 +430,76 @@ sys_page_unmap(envid_t envid, void *va)
 static int
 sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, unsigned perm)
 {
-	// LAB 4: Your code here.
-	panic("sys_ipc_try_send not implemented");
+    // LAB 4: Your code here.
+    struct Env* uenv = NULL;
+    pte_t* src_pte_store = NULL;
+    pte_t* dst_pte_store = NULL;
+    if(envid2env(envid,&uenv,0) < 0) {
+        cprintf("sys_try_send: envid2env(envid,&uenv,0) failed\n");
+        return -E_BAD_ENV;
+    }
+
+    if(!uenv->env_ipc_recving) {
+        return -E_IPC_NOT_RECV;
+    }
+
+#ifdef DEBUG_SYSCALL_C
+    cprintf("Current handling envid:0x%x\n", uenv->env_id);
+#endif
+    if(srcva != IPC_NO_PAGE) {
+        if((srcva >= (void*)UTOP || (((uint32_t)srcva) % PGSIZE))) {
+            cprintf("!!! sys_try_send: srcva>=UTOP ,not Aligned !!!\n");
+            return -E_INVAL;
+        }
+
+        if(perm & (~PTE_SYSCALL)) {
+            cprintf("!!! sys_try_send: perm checking failed !!!\n");
+            return -E_INVAL;
+        }
+        if(NULL == page_lookup(curenv->env_pgdir,srcva,&src_pte_store)) {
+            cprintf("!!! sys_try_send: srcva's page doesn't exist !!!\n");
+            return -E_INVAL;
+        }
+
+        if( (!((*src_pte_store) & (PTE_W))) && (perm & PTE_W)) {
+            cprintf("!!! sys_try_send: srcva's pte_store's permission error !!!\n");
+            return -E_INVAL;
+        }
+    }
+
+    uenv->env_ipc_perm = 0;
+    if(IPC_NO_PAGE != srcva && IPC_NO_PAGE != uenv->env_ipc_dstva) {
+        if(NULL != page_lookup(uenv->env_pgdir, uenv->env_ipc_dstva,NULL)){
+            cprintf("!!! sys_try_send: dstva's page doesn't exist !!!\n");
+            return -E_NO_MEM;
+        }
+
+        sys_page_map(curenv->env_id, srcva, envid, uenv->env_ipc_dstva,perm);
+
+        if(NULL == page_lookup(uenv->env_pgdir, uenv->env_ipc_dstva,&dst_pte_store)){
+            panic("!!! sys_try_send: error map mapge!!!\n");
+        }
+//        *dst_pte_store = ((*dst_pte_store) & (~PTE_AVAIL)) | perm;
+        uenv->env_ipc_perm = perm;
+
+    } else if(IPC_NO_PAGE == srcva && IPC_NO_PAGE != uenv->env_ipc_dstva){
+//        return -E_NO_MEM;
+        /*It is ok. I Guess!*/
+       // Receiver could use the perm returned to check it transferred or not.
+
+    } else if(IPC_NO_PAGE != srcva && IPC_NO_PAGE == uenv->env_ipc_dstva){
+        /*It is ok.*/
+    }
+    uenv->env_ipc_from = curenv->env_id;
+    uenv->env_ipc_value = value;
+    uenv->env_tf.tf_regs.reg_eax = 0;
+    uenv->env_ipc_recving = FALSE;
+
+#ifdef DEBUG_SYSCALL_C
+    cprintf("===[0x%x]finish in ipc_try_send: %d===\n",curenv->env_id,value);
+#endif
+    uenv->env_status =  ENV_RUNNABLE;
+    return 0;
 }
 
 // Block until a value is ready.  Record that you want to receive
@@ -436,9 +516,29 @@ sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, unsigned perm)
 static int
 sys_ipc_recv(void *dstva)
 {
-	// LAB 4: Your code here.
-	panic("sys_ipc_recv not implemented");
-	return 0;
+#ifdef DEBUG_SYSCALL_C
+    cprintf("===[0x%x]Execute in ipc_recv===\n",curenv->env_id);
+#endif
+    // LAB 4: Your code here.
+    if(IPC_NO_PAGE != dstva && (dstva >= (void*)UTOP ||(((int)dstva) % PGSIZE))){
+        cprintf("!!! sys_ipc_recv: dstva check failed !!!\n");
+        return -E_INVAL;
+    }
+
+    curenv->env_ipc_recving = TRUE;
+    curenv->env_ipc_dstva = dstva;
+    curenv->env_status = ENV_NOT_RUNNABLE;
+
+    //sys_env_set_status
+    //1.Set It as the NOT-RUNNABLE.
+    //2.When Ok set it as the Runnable @ipc_send
+    //3.re-thjnk the round-roubin schedule.
+    while(curenv->env_ipc_recving)
+    {
+        sys_yield();
+    }
+
+    return 0;
 }
 
 // Dispatches to the correct kernel function, passing the arguments.
@@ -476,6 +576,10 @@ syscall (uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3,
          return sys_env_set_status(a1,a2);
     case SYS_env_set_pgfault_upcall:
          return sys_env_set_pgfault_upcall(a1,(void*)a2);
+    case SYS_ipc_try_send:
+         return sys_ipc_try_send(a1,a2,(void*)a3,a4);
+    case SYS_ipc_recv:
+         return sys_ipc_recv((void*)a1);
     default:
         return -E_INVAL;
     }
