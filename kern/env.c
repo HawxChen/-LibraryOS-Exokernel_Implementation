@@ -299,7 +299,7 @@ env_alloc (struct Env **newenv_store, envid_t parent_id)
 	e->env_tf.tf_es = GD_UD | 3;
 	e->env_tf.tf_ss = GD_UD | 3;
 	e->env_tf.tf_esp = USTACKTOP;
-    /*Prob. Why does in load_icode's instruction mean tf_esp = USTACKTOP - PGSIZE */
+        /*Prob. Why does in load_icode's instruction mean tf_esp = USTACKTOP - PGSIZE */
 	e->env_tf.tf_cs = GD_UT | 3;
 	// You will set e->env_tf.tf_eip later.
         // In the load_icode. It sets the tf_eip.
@@ -532,6 +532,8 @@ env_create (uint8_t * binary, size_t size, enum EnvType type)
 
     //parent_id is set actually by env_alloc.
     e->env_parent_id = 0;
+    // If this is the file server (type == ENV_TYPE_FS) give it I/O privileges.
+    // LAB 5: Your code here.
 }
 
 //
@@ -602,6 +604,57 @@ env_free (struct Env *e)
     //e->env_type = ENV_TYPE_IDLE;
     e->env_link = env_free_list;
     env_free_list = e;
+
+#if 0
+=======
+    pte_t *pt;
+    uint32_t pdeno, pteno;
+    physaddr_t pa;
+
+    // If freeing the current environment, switch to kern_pgdir
+    // before freeing the page directory, just in case the page
+    // gets reused.
+    if (e == curenv)
+            lcr3(PADDR(kern_pgdir));
+
+    // Note the environment's demise.
+    // cprintf("[%08x] free env %08x\n", curenv ? curenv->env_id : 0, e->env_id);
+
+    // Flush all mapped pages in the user portion of the address space
+    static_assert(UTOP % PTSIZE == 0);
+    for (pdeno = 0; pdeno < PDX(UTOP); pdeno++) {
+
+            // only look at mapped page tables
+            if (!(e->env_pgdir[pdeno] & PTE_P))
+                    continue;
+
+            // find the pa and va of the page table
+            pa = PTE_ADDR(e->env_pgdir[pdeno]);
+            pt = (pte_t*) KADDR(pa);
+
+            // unmap all PTEs in this page table
+            for (pteno = 0; pteno <= PTX(~0); pteno++) {
+                    if (pt[pteno] & PTE_P)
+                            page_remove(e->env_pgdir, PGADDR(pdeno, pteno, 0));
+            }
+
+            // free the page table itself
+            e->env_pgdir[pdeno] = 0;
+            page_decref(pa2page(pa));
+    }
+
+    // free the page directory
+    pa = PADDR(e->env_pgdir);
+    e->env_pgdir = 0;
+    page_decref(pa2page(pa));
+
+    // return the environment to the free list
+    e->env_status = ENV_FREE;
+    e->env_link = env_free_list;
+    env_free_list = e;
+>>>>>>> 482ec3f5bee08d853ebe640a25d98f591e1f3b4f
+#endif
+
 }
 
 //
