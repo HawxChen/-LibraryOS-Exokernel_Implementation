@@ -291,7 +291,9 @@ sys_page_map(envid_t srcenvid/*In fork: child*/, void *srcva,
 
     // LAB 4: Your code here.
 #ifdef DEBUG_SYSCALL_C
-    cprintf("===[0x%x]Execute in sys_page_map===perm:0x%x\n",curenv->env_id,perm);
+    cprintf("===[0x%x]Execute in sys_page_map,perm:0x%x\n",curenv->env_id,perm);
+    cprintf("   srcenvid:0x%04x,srcva:0x%08x --> dstenvid:0x%04x, dstva:0x%08x ===\n",
+            srcenvid,(uint32_t)srcva,dstenvid,(uint32_t)dstva);
 #endif
     pte_t* src_pte = NIL;
     struct Page* src_page;
@@ -441,7 +443,9 @@ sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, unsigned perm)
         return -E_IPC_NOT_RECV;
     }
 
+#ifdef DEBUG_SYSCALL_C
     cprintf("Current handling envid:0x%x\n", uenv->env_id);
+#endif
     if(srcva != IPC_NO_PAGE) {
         if((srcva >= (void*)UTOP || (((uint32_t)srcva) % PGSIZE))) {
             cprintf("!!! sys_try_send: srcva>=UTOP ,not Aligned !!!\n");

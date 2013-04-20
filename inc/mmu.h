@@ -1,6 +1,7 @@
 #ifndef JOS_INC_MMU_H
 #define JOS_INC_MMU_H
 /*Debug Compile Optoin*/
+/*=====> Deubbgin info On/Off*/
 #define TESTING_GRADE_PURPOSE
 //#define DEBUG_ALL_C_H
 #ifdef DEBUG_ALL_C_H
@@ -11,8 +12,12 @@
 #define DEBUG_PMAP_C
 #endif
 
+#ifndef DEBUG_ALL_C_H
+#endif
+
 #define BLOCK_ANNOY_INFO
 
+/* Deubbgin info On/Off  <=====*/
 //Bug reproduce 
 //#define bug_017
 /*
