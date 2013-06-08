@@ -1,0 +1,354 @@
+$ echo > a
+  --SysCall: [SYS_open] sys_open
+    =create=
+        log_write sector 4 from ialloc
+        //New created file a's inode block
+            #0  log_write (b=0x8010d9cc, caller=0x801082fc "ialloc") at log.c:153
+            #1  0x80101713 in ialloc (dev=1, type=2) at fs.c:190
+            #2  0x80105a6a in create (path=0x15c7 "a", type=2, major=0, minor=0) at sysfile.c:245
+            #3  0x80105bd3 in sys_open () at sysfile.c:282
+            #4  0x801052d4 in syscall () at syscall.c:156
+            #5  0x8010647d in trap (tf=0x8dfbefb4) at trap.c:41
+            #6  0x80106271 in ?? () at trapasm.S:23
+
+        log_write sector 4 from iupdate
+        //updat the created file a's inode block about major/minor/nlink
+            #0  log_write (b=0x8010d9cc, caller=0x80108315 "iupdate") at log.c:153
+            #1  0x80101811 in iupdate (ip=0x8010e994) at fs.c:213
+            #2  0x80105ab4 in create (path=0x15c7 "a", type=2, major=0, minor=0) at sysfile.c:252
+            #3  0x80105bd3 in sys_open () at sysfile.c:282
+            #4  0x801052d4 in syscall () at syscall.c:156
+            #5  0x8010647d in trap (tf=0x8dfbefb4) at trap.c:41
+            #6  0x80106271 in ?? () at trapasm.S:23
+
+        =dirlink : a=
+            log_write sector 29 from writei 
+            //parent directory's data block "/"
+                #0  log_write (b=0x8010d384, caller=0x8010836c "writei") at log.c:153
+                #1  0x801020cd in writei (ip=0x8010e8f4, src=0x8dfbee78 "\023", off=304, n=16, name=0x801083a0 "dirlink") at fs.c:472
+                #2  0x80102305 in dirlink (dp=0x8010e8f4, name=0x8dfbeec6 "a", inum=19) at fs.c:541
+                #3  0x80105b41 in create (path=0x15c7 "a", type=2, major=0, minor=0) at sysfile.c:263
+                #4  0x80105bd3 in sys_open () at sysfile.c:282
+                #5  0x801052d4 in syscall () at syscall.c:156
+                #6  0x8010647d in trap (tf=0x8dfbefb4) at trap.c:41
+                #7  0x80106271 in ?? () at trapasm.S:23
+
+
+$echo x > a
+  --SysCall: [SYS_write] sys_write
+    =filewriete=
+        =writei=
+            =bmap=
+                =balloc=
+                    1024 = 1 boot block + 1 super block + 26 inode blocks + 1 bitmap blocks + 985 data blocks + 10 log blocks
+                           No.0           N0.1            No.2 ~ No.27      No.28
+                    sb:size:1024,data blocks:985,ninodes:200,log blocks:10
+                    All Inodes's block#:31
+                    BBLOCK(b,sb.ninodes):28
+                    log_write sector 28 from balloc 
+                    //Enable the bit in bitmap block for the file's new allocated data blcok
+                        #0  log_write (b=0x8010c90c, caller=0x801082bf "balloc") at log.c:153
+                        #1  0x801014f0 in balloc (dev=1) at fs.c:69
+                        #2  0x80101bfb in bmap (ip=0x8010e994, bn=0) at fs.c:355
+                        #3  0x80102059 in writei (ip=0x8010e994, src=0x2f5c "x", off=0, n=1, name=0x80108233 "filewrite") at fs.c:468
+                        #4  0x80101271 in filewrite (f=0x8010df0c, addr=0x2f5c "x", n=1) at file.c:135
+                        #5  0x8010552a in sys_write () at sysfile.c:82
+                        #6  0x801052d4 in syscall () at syscall.c:156
+                        #7  0x8010647d in trap (tf=0x8df23fb4) at trap.c:41
+                        #8  0x80106271 in ?? () at trapasm.S:23
+
+                    log_write sector 423 from bzero  
+                    //clear the files' new allocated data block
+                        #0  log_write (b=0x8010d384, caller=0x80108250 "bzero") at log.c:153
+                        #1  0x80101386 in bzero (dev=1, bno=423) at fs.c:43
+                        #2  0x80101512 in balloc (dev=1) at fs.c:71
+                        #3  0x80101bfb in bmap (ip=0x8010e994, bn=0) at fs.c:355
+                        #4  0x80102059 in writei (ip=0x8010e994, src=0x2f5c "x", off=0, n=1, name=0x80108233 "filewrite") at fs.c:468
+                        #5  0x80101271 in filewrite (f=0x8010df0c, addr=0x2f5c "x", n=1) at file.c:135
+                        #6  0x8010552a in sys_write () at sysfile.c:82
+                        #7  0x801052d4 in syscall () at syscall.c:156
+                        #8  0x8010647d in trap (tf=0x8df23fb4) at trap.c:41
+                        #9  0x80106271 in ?? () at trapasm.S:23
+
+        log_write sector 423 from writei             
+        // write the "x" into the file's data block
+            #0  log_write (b=0x8010d384, caller=0x8010836c "writei") at log.c:153
+            #1  0x801020cd in writei (ip=0x8010e994, src=0x2f5c "x", off=0, n=1, name=0x80108233 "filewrite") at fs.c:472
+            #2  0x80101271 in filewrite (f=0x8010df0c, addr=0x2f5c "x", n=1) at file.c:135
+            #3  0x8010552a in sys_write () at sysfile.c:82
+            #4  0x801052d4 in syscall () at syscall.c:156
+            #5  0x8010647d in trap (tf=0x8df23fb4) at trap.c:41
+            #6  0x80106271 in ?? () at trapasm.S:23
+
+        log_write sector 4 from iupdate              
+        // update the the file's inode about size information
+            #0  log_write (b=0x8010d16c, caller=0x80108315 "iupdate") at log.c:153
+            #1  0x80101811 in iupdate (ip=0x8010e994) at fs.c:213
+            #2  0x8010211b in writei (ip=0x8010e994, src=0x2f5d "", off=1, n=1, name=0x80108233 "filewrite") at fs.c:478
+            #3  0x80101271 in filewrite (f=0x8010df0c, addr=0x2f5c "x", n=1) at file.c:135
+            #4  0x8010552a in sys_write () at sysfile.c:82
+            #5  0x801052d4 in syscall () at syscall.c:156
+            #6  0x8010647d in trap (tf=0x8df23fb4) at trap.c:41
+            #7  0x80106271 in ?? () at trapasm.S:23
+
+  --SysCall: [SYS_write] sys_write
+    log_write sector 423 from writei                 -- data block
+    // write the "\n" into the file's data block
+            #0  log_write (b=0x8010d384, caller=0x8010836c "writei") at log.c:153
+            #1  0x801020cd in writei (ip=0x8010e994, src=0x2f5c "\n", off=1, n=1, name=0x80108233 "filewrite") at fs.c:472
+            #2  0x80101271 in filewrite (f=0x8010df0c, addr=0x2f5c "\n", n=1) at file.c:135
+            #3  0x8010552a in sys_write () at sysfile.c:82
+            #4  0x801052d4 in syscall () at syscall.c:156
+            #5  0x8010647d in trap (tf=0x8df23fb4) at trap.c:41
+            #6  0x80106271 in ?? () at trapasm.S:23
+
+    log_write sector 4 from iupdate                  -- indoe block
+    // update the the file's inode about size information
+            #0  log_write (b=0x8010d16c, caller=0x80108315 "iupdate") at log.c:153
+            #1  0x80101811 in iupdate (ip=0x8010e994) at fs.c:213
+            #2  0x8010211b in writei (ip=0x8010e994, src=0x2f5d "", off=2, n=1, name=0x80108233 "filewrite") at fs.c:478
+            #3  0x80101271 in filewrite (f=0x8010df0c, addr=0x2f5c "\n", n=1) at file.c:135
+            #4  0x8010552a in sys_write () at sysfile.c:82
+            #5  0x801052d4 in syscall () at syscall.c:156
+            #6  0x8010647d in trap (tf=0x8df23fb4) at trap.c:41
+            #7  0x80106271 in ?? () at trapasm.S:23
+
+
+$rm a 
+  --SysCall: [SYS_unlink] sys_unlink
+    log_write sector 29 from writei 
+    //clear directory's data block for dirent
+        #0  log_write (b=0x8010cd3c, caller=0x8010836c "writei") at log.c:153
+        #1  0x801020cd in writei (ip=0x8010e8f4, src=0x8dfc6f08 "", off=304, n=16, name=0x80108856 "sys_unlink") at fs.c:472
+        #2  0x80105911 in sys_unlink () at sysfile.c:202
+        #3  0x801052d4 in syscall () at syscall.c:156
+        #4  0x8010647d in trap (tf=0x8dfc6fb4) at trap.c:41
+        #5  0x80106271 in ?? () at trapasm.S:23
+
+    log_write sector 4 from iupdate
+    //write back the file's indoe back (just did nlink--) to the corresponding block
+        #0  log_write (b=0x8010d16c, caller=0x80108315 "iupdate") at log.c:153
+        #1  0x80101811 in iupdate (ip=0x8010e994) at fs.c:213
+        #2  0x80105972 in sys_unlink () at sysfile.c:212
+        #3  0x801052d4 in syscall () at syscall.c:156
+        #4  0x8010647d in trap (tf=0x8dfc6fb4) at trap.c:41
+        #5  0x80106271 in ?? () at trapasm.S:23
+
+    log_write sector 28 from bfree
+    //write the disable bit to the bitmap block for the files' corresponding free data block
+        #0  log_write (b=0x8010c90c, caller=0x801082ef "bfree") at log.c:153
+        #1  0x80101649 in bfree (dev=1, b=423) at fs.c:94
+        #2  0x80101d10 in itrunc (ip=0x8010e994) at fs.c:390
+        #3  0x80101b58 in iput (ip=0x8010e994) at fs.c:320
+        #4  0x80101bc6 in iunlockput (ip=0x8010e994) at fs.c:335
+        #5  0x8010597d in sys_unlink () at sysfile.c:213
+        #6  0x801052d4 in syscall () at syscall.c:156
+        #7  0x8010647d in trap (tf=0x8dfc6fb4) at trap.c:41
+        #8  0x80106271 in ?? () at trapasm.S:23
+
+
+    log_write sector 4 from iupdate
+    //write the file's inode (just did addr[xx] = 0])back to the corresponding block
+        #0  log_write (b=0x8010d16c, caller=0x80108315 "iupdate") at log.c:153
+        #1  0x80101811 in iupdate (ip=0x8010e994) at fs.c:213
+        #2  0x80101ddd in itrunc (ip=0x8010e994) at fs.c:408
+        #3  0x80101b58 in iput (ip=0x8010e994) at fs.c:320
+        #4  0x80101bc6 in iunlockput (ip=0x8010e994) at fs.c:335
+        #5  0x8010597d in sys_unlink () at sysfile.c:213
+        #6  0x801052d4 in syscall () at syscall.c:156
+        #7  0x8010647d in trap (tf=0x8dfc6fb4) at trap.c:41
+        #8  0x80106271 in ?? () at trapasm.S:23
+
+    log_write sector 4 from iupdate
+    //write back the file's indoe back (jut did type = 0) to the corresponding block
+    //Finally, Free Now.
+        #0  log_write (b=0x8010d16c, caller=0x80108315 "iupdate") at log.c:153
+        #1  0x80101811 in iupdate (ip=0x8010e994) at fs.c:213
+        #2  0x80101b6c in iput (ip=0x8010e994) at fs.c:322
+        #3  0x80101bc6 in iunlockput (ip=0x8010e994) at fs.c:335
+        #4  0x8010597d in sys_unlink () at sysfile.c:213
+        #5  0x801052d4 in syscall () at syscall.c:156
+        #6  0x8010647d in trap (tf=0x8dfc6fb4) at trap.c:41
+        #7  0x80106271 in ?? () at trapasm.S:23
+
+$mkdir d
+  --SysCall: [SYS_mkdir] sys_mkdir
+    log_write sector 4 from ialloc
+    //allocat the directory d's inode
+        #0  log_write (b=0x8010d9cc, caller=0x801082fc "ialloc") at log.c:153
+        #1  0x80101713 in ialloc (dev=1, type=1) at fs.c:190
+        #2  0x80105a6a in create (path=0x2ff4 "d", type=1, major=0, minor=0) at sysfile.c:245
+        #3  0x80105d2c in sys_mkdir () at sysfile.c:318
+        #4  0x801052d4 in syscall () at syscall.c:156
+        #5  0x8010647d in trap (tf=0x8df1bfb4) at trap.c:41
+        #6  0x80106271 in ?? () at trapasm.S:23
+
+    log_write sector 4 from iupdate
+    //update the directory's indoe about major/minor/nlink
+        #0  log_write (b=0x8010d9cc, caller=0x80108315 "iupdate") at log.c:153
+        #1  0x80101811 in iupdate (ip=0x8010e994) at fs.c:213
+        #2  0x80105ab4 in create (path=0x2ff4 "d", type=1, major=0, minor=0) at sysfile.c:252
+        #3  0x80105d2c in sys_mkdir () at sysfile.c:318
+        #4  0x801052d4 in syscall () at syscall.c:156
+        #5  0x8010647d in trap (tf=0x8df1bfb4) at trap.c:41
+        #6  0x80106271 in ?? () at trapasm.S:23
+
+    log_write sector 2 from iupdate                  
+    //Parent directory's "/" inode block about nlink.
+        #0  log_write (b=0x8010c90c, caller=0x80108315 "iupdate") at log.c:153
+        #1  0x80101811 in iupdate (ip=0x8010e8f4) at fs.c:213
+        #2  0x80105ad7 in create (path=0x2ff4 "d", type=1, major=0, minor=0) at sysfile.c:256
+        #3  0x80105d2c in sys_mkdir () at sysfile.c:318
+        #4  0x801052d4 in syscall () at syscall.c:156
+        #5  0x8010647d in trap (tf=0x8df1bfb4) at trap.c:41
+        #6  0x80106271 in ?? () at trapasm.S:23
+
+    dirlink : .
+    sb:size:1024,nblocks:985,ninodes:200,nlog:10
+    All Inodes's block#:31'
+    BBLOCK(b,sb.ninodes):28
+    log_write sector 28 from balloc
+    //allocate the one data block for direcoty d' dirent group data
+        #0  log_write (b=0x8010cf54, caller=0x801082bf "balloc") at log.c:153
+        #1  0x801014f0 in balloc (dev=1) at fs.c:69
+        #2  0x80101bfb in bmap (ip=0x8010e994, bn=0) at fs.c:355
+        #3  0x80102059 in writei (ip=0x8010e994, src=0x8df1be88 "\023", off=0, n=16, name=0x801083a0 "dirlink") at fs.c:468
+        #4  0x80102305 in dirlink (dp=0x8010e994, name=0x8010883f ".", inum=19) at fs.c:541
+        #5  0x80105af4 in create (path=0x2ff4 "d", type=1, major=0, minor=0) at sysfile.c:259
+        #6  0x80105d2c in sys_mkdir () at sysfile.c:318
+        #7  0x801052d4 in syscall () at syscall.c:156
+        #8  0x8010647d in trap (tf=0x8df1bfb4) at trap.c:41
+        #9  0x80106271 in ?? () at trapasm.S:23
+
+    log_write sector 423 from bzero
+    //clear the one data block just aloocated for direcoty d' dirent group data
+        #0  log_write (b=0x8010c6f4, caller=0x80108250 "bzero") at log.c:153
+        #1  0x80101386 in bzero (dev=1, bno=423) at fs.c:43
+        #2  0x80101512 in balloc (dev=1) at fs.c:71
+        #3  0x80101bfb in bmap (ip=0x8010e994, bn=0) at fs.c:355
+        #4  0x80102059 in writei (ip=0x8010e994, src=0x8df1be88 "\023", off=0, n=16, name=0x801083a0 "dirlink") at fs.c:468
+        #5  0x80102305 in dirlink (dp=0x8010e994, name=0x8010883f ".", inum=19) at fs.c:541
+        #6  0x80105af4 in create (path=0x2ff4 "d", type=1, major=0, minor=0) at sysfile.c:259
+        #7  0x80105d2c in sys_mkdir () at sysfile.c:318
+        #8  0x801052d4 in syscall () at syscall.c:156
+        #9  0x8010647d in trap (tf=0x8df1bfb4) at trap.c:41
+        #10 0x80106271 in ?? () at trapasm.S:23
+
+    log_write sector 423 from writei
+    //write the "." dirent into the data block just allocated
+        #0  log_write (b=0x8010c6f4, caller=0x8010836c "writei") at log.c:153
+        #1  0x801020cd in writei (ip=0x8010e994, src=0x8df1be88 "\023", off=0, n=16, name=0x801083a0 "dirlink") at fs.c:472
+        #2  0x80102305 in dirlink (dp=0x8010e994, name=0x8010883f ".", inum=19) at fs.c:541
+        #3  0x80105af4 in create (path=0x2ff4 "d", type=1, major=0, minor=0) at sysfile.c:259
+        #4  0x80105d2c in sys_mkdir () at sysfile.c:318
+        #5  0x801052d4 in syscall () at syscall.c:156
+        #6  0x8010647d in trap (tf=0x8df1bfb4) at trap.c:41
+        #7  0x80106271 in ?? () at trapasm.S:23
+
+    log_write sector 4 from iupdate
+    //update the the block for directory d's inode about directory's new dirent size
+        #0  log_write (b=0x8010d9cc, caller=0x80108315 "iupdate") at log.c:153
+        #1  0x80101811 in iupdate (ip=0x8010e994) at fs.c:213
+        #2  0x8010211b in writei (ip=0x8010e994, src=0x8df1be98 "", off=16, n=16, name=0x801083a0 "dirlink") at fs.c:478
+        #3  0x80102305 in dirlink (dp=0x8010e994, name=0x8010883f ".", inum=19) at fs.c:541
+        #4  0x80105af4 in create (path=0x2ff4 "d", type=1, major=0, minor=0) at sysfile.c:259
+        #5  0x80105d2c in sys_mkdir () at sysfile.c:318
+        #6  0x801052d4 in syscall () at syscall.c:156
+        #7  0x8010647d in trap (tf=0x8df1bfb4) at trap.c:41
+        #8  0x80106271 in ?? () at trapasm.S:23
+
+    dirlink : ..
+    log_write sector 423 from writei
+    //write the ".." dirent into the directory d's data block 
+        #0  log_write (b=0x8010c6f4, caller=0x8010836c "writei") at log.c:153
+        #1  0x801020cd in writei (ip=0x8010e994, src=0x8df1be88 "\001", off=16, n=16, name=0x801083a0 "dirlink") at fs.c:472
+        #2  0x80102305 in dirlink (dp=0x8010e994, name=0x80108841 "..", inum=1) at fs.c:541
+        #3  0x80105b15 in create (path=0x2ff4 "d", type=1, major=0, minor=0) at sysfile.c:259
+        #4  0x80105d2c in sys_mkdir () at sysfile.c:318
+        #5  0x801052d4 in syscall () at syscall.c:156
+        #6  0x8010647d in trap (tf=0x8df1bfb4) at trap.c:41
+        #7  0x80106271 in ?? () at trapasm.S:23
+
+    log_write sector 4 from iupdate
+    //update the the block for directory d's inode about directory's new dirent size
+        #0  log_write (b=0x8010d9cc, caller=0x80108315 "iupdate") at log.c:153
+        #1  0x80101811 in iupdate (ip=0x8010e994) at fs.c:213
+        #2  0x8010211b in writei (ip=0x8010e994, src=0x8df1be98 "\020", off=32, n=16, name=0x801083a0 "dirlink") at fs.c:478
+        #3  0x80102305 in dirlink (dp=0x8010e994, name=0x80108841 "..", inum=1) at fs.c:541
+        #4  0x80105b15 in create (path=0x2ff4 "d", type=1, major=0, minor=0) at sysfile.c:259
+        #5  0x80105d2c in sys_mkdir () at sysfile.c:318
+        #6  0x801052d4 in syscall () at syscall.c:156
+        #7  0x8010647d in trap (tf=0x8df1bfb4) at trap.c:41
+        #8  0x80106271 in ?? () at trapasm.S:23
+
+    dirlink : d
+    log_write sector 29 from writei
+    //write the "d" directory just allocated into the parent direcoty's dirent group.
+        #0  log_write (b=0x8010d384, caller=0x8010836c "writei") at log.c:153
+        #1  0x801020cd in writei (ip=0x8010e8f4, src=0x8df1be88 "\023", off=304, n=16, name=0x801083a0 "dirlink") at fs.c:472
+        #2  0x80102305 in dirlink (dp=0x8010e8f4, name=0x8df1bed6 "d", inum=19) at fs.c:541
+        #3  0x80105b41 in create (path=0x2ff4 "d", type=1, major=0, minor=0) at sysfile.c:263
+        #4  0x80105d2c in sys_mkdir () at sysfile.c:318
+        #5  0x801052d4 in syscall () at syscall.c:156
+        #6  0x8010647d in trap (tf=0x8df1bfb4) at trap.c:41
+        #7  0x80106271 in ?? () at trapasm.S:23
+
+
+$rm d
+  --SysCall: [SYS_unlink] sys_unlink]
+    log_write sector 29 from writei
+    //clear the dirent for current rm directory d in the parent dir's dirent group.
+        #0  log_write (b=0x8010d384, caller=0x8010836c "writei") at log.c:153
+        #1  0x801020cd in writei (ip=0x8010e8f4, src=0x8df2df08 "", off=304, n=16, name=0x80108856 "sys_unlink") at fs.c:472
+        #2  0x80105911 in sys_unlink () at sysfile.c:202
+        #3  0x801052d4 in syscall () at syscall.c:156
+        #4  0x8010647d in trap (tf=0x8df2dfb4) at trap.c:41
+        #5  0x80106271 in ?? () at trapasm.S:23
+    log_write sector 2 from iupdate
+    //write back the the parent dir's inode into the corresponding block for its nlink--(becouse of rm d)
+        #0  log_write (b=0x8010d59c, caller=0x80108315 "iupdate") at log.c:153
+        #1  0x80101811 in iupdate (ip=0x8010e8f4) at fs.c:213
+        #2  0x8010594b in sys_unlink () at sysfile.c:207
+        #3  0x801052d4 in syscall () at syscall.c:156
+        #4  0x8010647d in trap (tf=0x8df2dfb4) at trap.c:41
+        #5  0x80106271 in ?? () at trapasm.S:23
+    log_write sector 4 from iupdate
+    //write back the the current dir "d"'s inode into the corresponding block for its nlink--(becouse of rm d)
+        #0  log_write (b=0x8010cb24, caller=0x80108315 "iupdate") at log.c:153
+        #1  0x80101811 in iupdate (ip=0x8010e994) at fs.c:213
+        #2  0x80105972 in sys_unlink () at sysfile.c:212
+        #3  0x801052d4 in syscall () at syscall.c:156
+        #4  0x8010647d in trap (tf=0x8df2dfb4) at trap.c:41
+        #5  0x80106271 in ?? () at trapasm.S:23
+    log_write sector 28 from bfree
+    //write the disable bit to the bitmap block for the dir "d"'s corresponding free data block
+        #0  log_write (b=0x8010d7b4, caller=0x801082ef "bfree") at log.c:153
+        #1  0x80101649 in bfree (dev=1, b=423) at fs.c:94
+        #2  0x80101d10 in itrunc (ip=0x8010e994) at fs.c:390
+        #3  0x80101b58 in iput (ip=0x8010e994) at fs.c:320
+        #4  0x80101bc6 in iunlockput (ip=0x8010e994) at fs.c:335
+        #5  0x8010597d in sys_unlink () at sysfile.c:213
+        #6  0x801052d4 in syscall () at syscall.c:156
+        #7  0x8010647d in trap (tf=0x8df2dfb4) at trap.c:41
+        #8  0x80106271 in ?? () at trapasm.S:23
+    log_write sector 4 from iupdate
+    //Write back the cuurent rm dir "d"'s indoe for status of just free data block bitmap and size =0
+        #0  log_write (b=0x8010cb24, caller=0x80108315 "iupdate") at log.c:153
+        #1  0x80101811 in iupdate (ip=0x8010e994) at fs.c:213
+        #2  0x80101ddd in itrunc (ip=0x8010e994) at fs.c:408
+        #3  0x80101b58 in iput (ip=0x8010e994) at fs.c:320
+        #4  0x80101bc6 in iunlockput (ip=0x8010e994) at fs.c:335
+        #5  0x8010597d in sys_unlink () at sysfile.c:213
+        #6  0x801052d4 in syscall () at syscall.c:156
+        #7  0x8010647d in trap (tf=0x8df2dfb4) at trap.c:41
+        #8  0x80106271 in ?? () at trapasm.S:23
+    log_write sector 4 from iupdate
+    //Free the inode, and write back the inode for type = 0 and ref--
+        #0  log_write (b=0x8010cb24, caller=0x80108315 "iupdate") at log.c:153
+        #1  0x80101811 in iupdate (ip=0x8010e994) at fs.c:213
+        #2  0x80101b6c in iput (ip=0x8010e994) at fs.c:322
+        #3  0x80101bc6 in iunlockput (ip=0x8010e994) at fs.c:335
+        #4  0x8010597d in sys_unlink () at sysfile.c:213
+        #5  0x801052d4 in syscall () at syscall.c:156
+        #6  0x8010647d in trap (tf=0x8df2dfb4) at trap.c:41
+        #7  0x80106271 in ?? () at trapasm.S:23
