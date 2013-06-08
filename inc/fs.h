@@ -27,19 +27,19 @@
 #define MAXFILESIZE	((NDIRECT + NINDIRECT) * BLKSIZE)
 
 struct File {
-	char f_name[MAXNAMELEN];	// filename
-	off_t f_size;			// file size in bytes
-	uint32_t f_type;		// file type
+    char f_name[MAXNAMELEN];	// filename
+    off_t f_size;		// file size in bytes
+    uint32_t f_type;		// file type
 
-	// Block pointers.
-	// A block is allocated iff its value is != 0.
-	uint32_t f_direct[NDIRECT];	// direct blocks
-	uint32_t f_indirect;		// indirect block
+    // Block pointers.
+    // A block is allocated iff its value is != 0.
+    uint32_t f_direct[NDIRECT];	// direct blocks
+    uint32_t f_indirect;	// indirect block
 
-	// Pad out to 256 bytes; must do arithmetic in case we're compiling
-	// fsformat on a 64-bit machine.
-	uint8_t f_pad[256 - MAXNAMELEN - 8 - 4*NDIRECT - 4];
-} __attribute__((packed));	// required only on some 64-bit machines
+    // Pad out to 256 bytes; must do arithmetic in case we're compiling
+    // fsformat on a 64-bit machine.
+    uint8_t f_pad[256 - MAXNAMELEN - 8 - 4 * NDIRECT - 4];
+} __attribute__ ((packed));	// required only on some 64-bit machines
 
 // An inode block contains exactly BLKFILES 'struct File's
 #define BLKFILES	(BLKSIZE / sizeof(struct File))
@@ -54,63 +54,64 @@ struct File {
 #define FS_MAGIC	0x4A0530AE	// related vaguely to 'J\0S!'
 
 struct Super {
-	uint32_t s_magic;		// Magic number: FS_MAGIC
-	uint32_t s_nblocks;		// Total number of blocks on disk
-	struct File s_root;		// Root directory node
+    uint32_t s_magic;		// Magic number: FS_MAGIC
+    uint32_t s_nblocks;		// Total number of blocks on disk
+    struct File s_root;		// Root directory node
 };
 
 // Definitions for requests from clients to file system
 enum {
-	FSREQ_OPEN = 1,
-	FSREQ_SET_SIZE,
-	// Read returns a Fsret_read on the request page
-	FSREQ_READ,
-	FSREQ_WRITE,
-	// Stat returns a Fsret_stat on the request page
-	FSREQ_STAT,
-	FSREQ_FLUSH,
-	FSREQ_REMOVE,
-	FSREQ_SYNC
+    FSREQ_OPEN = 1,
+    FSREQ_SET_SIZE,
+    // Read returns a Fsret_read on the request page
+    FSREQ_READ,
+    FSREQ_WRITE,
+    // Stat returns a Fsret_stat on the request page
+    FSREQ_STAT,
+    FSREQ_FLUSH,
+    FSREQ_REMOVE,
+    FSREQ_SYNC
 };
 
 union Fsipc {
-	struct Fsreq_open {
-		char req_path[MAXPATHLEN];
-		int req_omode;
-	} open;
-	struct Fsreq_set_size {
-		int req_fileid;
-		off_t req_size;
-	} set_size;
-	struct Fsreq_read {
-		int req_fileid;
-		size_t req_n;
-	} read;
-	struct Fsret_read {
-		char ret_buf[PGSIZE];
-	} readRet;
-	struct Fsreq_write {
-		int req_fileid;
-		size_t req_n;
-		char req_buf[PGSIZE - (sizeof(int) + sizeof(size_t))];
-	} write;
-	struct Fsreq_stat {
-		int req_fileid;
-	} stat;
-	struct Fsret_stat {
-		char ret_name[MAXNAMELEN];
-		off_t ret_size;
-		int ret_isdir;
-	} statRet;
-	struct Fsreq_flush {
-		int req_fileid;
-	} flush;
-	struct Fsreq_remove {
-		char req_path[MAXPATHLEN];
-	} remove;
+    struct Fsreq_open {
+	char req_path[MAXPATHLEN];
+	int req_omode;
+    } open;
+    struct Fsreq_set_size {
+	int req_fileid;
+	off_t req_size;
+    } set_size;
+    struct Fsreq_read {
+	int req_fileid;
+	size_t req_n;
+    } read;
+    struct Fsret_read {
+	char ret_buf[PGSIZE];
+    } readRet;
+    struct Fsreq_write {
+	int req_fileid;
+	size_t req_n;
+	char req_buf[PGSIZE - (sizeof(int) + sizeof(size_t))];
+    }
+    write;
+    struct Fsreq_stat {
+	int req_fileid;
+    } stat;
+    struct Fsret_stat {
+	char ret_name[MAXNAMELEN];
+	off_t ret_size;
+	int ret_isdir;
+    } statRet;
+    struct Fsreq_flush {
+	int req_fileid;
+    } flush;
+    struct Fsreq_remove {
+	char req_path[MAXPATHLEN];
+    } remove;
 
-	// Ensure Fsipc is one page
-	char _pad[PGSIZE];
+    // Ensure Fsipc is one page
+    char _pad[PGSIZE];
 };
 
-#endif /* !JOS_INC_FS_H */
+#endif				/* !JOS_INC_FS_H */

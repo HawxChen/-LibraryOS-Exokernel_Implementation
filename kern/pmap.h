@@ -39,11 +39,9 @@ extern pde_t *kern_pgdir;
  */
 #define PADDR(kva) _paddr(__FILE__, __LINE__, kva)
 
-static inline physaddr_t
-_paddr (const char *file, int line, void *kva)
-{
+static inline physaddr_t _paddr(const char *file, int line, void *kva) {
     if ((uint32_t) kva < KERNBASE)
-        _panic (file, line, "PADDR called with invalid kva %08lx", kva);
+	_panic(file, line, "PADDR called with invalid kva %08lx", kva);
     return (physaddr_t) kva - KERNBASE;
 }
 
@@ -55,63 +53,53 @@ _paddr (const char *file, int line, void *kva)
  */
 #define KADDR(pa) _kaddr(__FILE__, __LINE__, pa)
 
-static inline void *
-_kaddr (const char *file, int line, physaddr_t pa)
-{
-    if (PGNUM (pa) >= npages)
-        _panic (file, line, "KADDR called with invalid pa %08lx", pa);
+static inline void *_kaddr(const char *file, int line, physaddr_t pa) {
+    if (PGNUM(pa) >= npages)
+	_panic(file, line, "KADDR called with invalid pa %08lx", pa);
     return (void *) (pa + KERNBASE);
 }
 
 
-enum
-{
+enum {
     // For page_alloc, zero the returned physical page.
     ALLOC_ZERO = 1 << 0,
 };
 
-void mem_init (void);
+void mem_init(void);
 
-void page_init (void);
-struct Page *page_alloc (int alloc_flags);
-void page_free (struct Page *pp);
-int page_insert (pde_t * pgdir, struct Page *pp, void *va, int perm);
-void page_remove (pde_t * pgdir, void *va);
-struct Page *page_lookup (pde_t * pgdir, void *va, pte_t ** pte_store);
-void page_decref (struct Page *pp);
+void page_init(void);
+struct Page *page_alloc(int alloc_flags);
+void page_free(struct Page *pp);
+int page_insert(pde_t * pgdir, struct Page *pp, void *va, int perm);
+void page_remove(pde_t * pgdir, void *va);
+struct Page *page_lookup(pde_t * pgdir, void *va, pte_t ** pte_store);
+void page_decref(struct Page *pp);
 
-void tlb_invalidate (pde_t * pgdir, void *va);
+void tlb_invalidate(pde_t * pgdir, void *va);
 
-int user_mem_check (struct Env *env, const void *va, size_t len, int perm);
-void user_mem_assert (struct Env *env, const void *va, size_t len, int perm);
+int user_mem_check(struct Env *env, const void *va, size_t len, int perm);
+void user_mem_assert(struct Env *env, const void *va, size_t len,
+		     int perm);
 
-static inline physaddr_t
-page2pa (struct Page *pp)
-{
+static inline physaddr_t page2pa(struct Page *pp) {
     return (pp - pages) << PGSHIFT;
 }
 
-static inline struct Page *
-pa2page (physaddr_t pa)
-{
-    if (PGNUM (pa) >= npages)
-        panic ("pa2page called with invalid pa");
-    return &pages[PGNUM (pa)];
+static inline struct Page *pa2page(physaddr_t pa) {
+    if (PGNUM(pa) >= npages)
+	panic("pa2page called with invalid pa");
+    return &pages[PGNUM(pa)];
 }
 
-static inline void *
-page2kva (struct Page *pp)
-{
-    return KADDR (page2pa (pp));
+static inline void *page2kva(struct Page *pp) {
+    return KADDR(page2pa(pp));
 }
 
-static inline void *
-kva2page (void *kva)
-{
-    return &pages[PGNUM ((PADDR (kva)))];
+static inline void *kva2page(void *kva) {
+    return &pages[PGNUM((PADDR(kva)))];
 }
 
-pte_t *pgdir_walk (pde_t * pgdir, const void *va, int create);
-pte_t *get_kernpgdir ();
+pte_t *pgdir_walk(pde_t * pgdir, const void *va, int create);
+pte_t *get_kernpgdir();
 
-#endif /* !JOS_KERN_PMAP_H */
+#endif				/* !JOS_KERN_PMAP_H */

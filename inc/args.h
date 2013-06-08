@@ -37,46 +37,46 @@ char *argvalue(struct Argstate *);
 
 // Example:
 //
-//	#include <inc/lib.h>
+//      #include <inc/lib.h>
 //
-//	void
-//	umain(int argc, char **argv)
-//	{
-//		int i;
-//		struct Argstate args;
+//      void
+//      umain(int argc, char **argv)
+//      {
+//              int i;
+//              struct Argstate args;
 //
-//		argstart(&argc, argv, &args);
-//		while ((i = argnext(&args)) >= 0)
-//			switch (i) {
-//			case 'r':
-//			case 'x':
-//				cprintf("'-%c' flag\n", i);
-//				break;
-//			case 'f':
-//				cprintf("'-f %s' flag\n", argvalue(&args));
-//				break;
-//			default:
-//				cprintf("unknown flag\n");
-//			}
+//              argstart(&argc, argv, &args);
+//              while ((i = argnext(&args)) >= 0)
+//                      switch (i) {
+//                      case 'r':
+//                      case 'x':
+//                              cprintf("'-%c' flag\n", i);
+//                              break;
+//                      case 'f':
+//                              cprintf("'-f %s' flag\n", argvalue(&args));
+//                              break;
+//                      default:
+//                              cprintf("unknown flag\n");
+//                      }
 //
-//		for (i = 1; i < argc; i++)
-//			cprintf("argument '%s'\n", argv[i]);
-//	}
+//              for (i = 1; i < argc; i++)
+//                      cprintf("argument '%s'\n", argv[i]);
+//      }
 //
 // If this program is run with the arguments
 // ["-rx", "-f", "foo", "--", "-r", "duh"]
 // it will print out
-//	'-r' flag
-//	'-x' flag
-//	'-f foo' flag
-//	argument '-r'
-//	argument 'duh'
+//      '-r' flag
+//      '-x' flag
+//      '-f foo' flag
+//      argument '-r'
+//      argument 'duh'
 
 struct Argstate {
-	int *argc;
-	const char **argv;
-	const char *curarg;
-	const char *argvalue;
+    int *argc;
+    const char **argv;
+    const char *curarg;
+    const char *argvalue;
 };
 
 #endif

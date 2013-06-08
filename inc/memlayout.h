@@ -4,7 +4,7 @@
 #ifndef __ASSEMBLER__
 #include <inc/types.h>
 #include <inc/mmu.h>
-#endif /* not __ASSEMBLER__ */
+#endif				/* not __ASSEMBLER__ */
 
 /*
  * This file contains definitions for memory management in our OS,
@@ -12,12 +12,12 @@
  */
 
 // Global descriptor numbers
-#define GD_KT     0x08          // kernel text
-#define GD_KD     0x10          // kernel data
-#define GD_UT     0x18          // user text
-#define GD_UD     0x20          // user data
+#define GD_KT     0x08		// kernel text
+#define GD_KD     0x10		// kernel data
+#define GD_UT     0x18		// user text
+#define GD_UD     0x20		// user data
 //#define GD_TSS    0x28          // Task segment selector
-#define GD_TSS0   0x28          // Task segment selector for CPU 0
+#define GD_TSS0   0x28		// Task segment selector for CPU 0
 
 /*
  * Virtual memory map:                                Permissions
@@ -94,7 +94,7 @@
 // IOPHYSMEM can be addressed at KERNBASE + IOPHYSMEM.  The hole ends
 // at physical address EXTPHYSMEM.
 #define IOPHYSMEM	0x0A0000
-#define EXTPHYSMEM	0x100000    //1MB
+#define EXTPHYSMEM	0x100000	//1MB
 
 // Kernel stack.
 /*
@@ -103,8 +103,8 @@
  *      ULIM      is 0xEFC00000 - 0x400000, 0xEF800000.
  */
 #define KSTACKTOP	(KERNBASE - PTSIZE)
-#define KSTKSIZE	(8*PGSIZE)  // size of a kernel stack
-#define KSTKGAP		(8*PGSIZE)  // size of a kernel stack guard
+#define KSTKSIZE	(8*PGSIZE)	// size of a kernel stack
+#define KSTKGAP		(8*PGSIZE)	// size of a kernel stack guard
 #define ULIM		(KSTACKTOP - PTSIZE)
 
 /*
@@ -153,7 +153,7 @@
  */
 #define PFTEMP		(UTEMP + PTSIZE - PGSIZE)
 // The location of the user-level STABS data structure
-#define USTABDATA	(PTSIZE / 2)	
+#define USTABDATA	(PTSIZE / 2)
 
 // Physical address of startup code for non-boot CPUs (APs)
 #define MPENTRY_PADDR	0x7000
@@ -186,8 +186,8 @@ typedef uint32_t pde_t;
     (VPT + (VPT >> PGSHIFT)) is the relative index to the Page Directory 
     
  */
-extern volatile pte_t vpt[];    // VA of "virtual page table"
-extern volatile pde_t vpd[];    // VA of current page directory
+extern volatile pte_t vpt[];	// VA of "virtual page table"
+extern volatile pde_t vpd[];	// VA of current page directory
 #endif
 
 /*
@@ -200,11 +200,10 @@ extern volatile pde_t vpd[];    // VA of current page directory
  * You can map a Page * to the corresponding physical address
  * with page2pa() in kern/pmap.h.
  */
-struct Page
-{
+struct Page {
     // Next page on the free list.
     struct Page *pp_link;
-    uint32_t paddr;             //Hawx: The memory mapped and managed by this page.
+    uint32_t paddr;		//Hawx: The memory mapped and managed by this page.
 
     // pp_ref is the count of pointers (usually in page table entries)
     // to this page, for pages allocated using page_alloc.
@@ -213,5 +212,5 @@ struct Page
 
     uint16_t pp_ref;
 };
-#endif /* !__ASSEMBLER__ */
-#endif /* !JOS_INC_MEMLAYOUT_H */
+#endif				/* !__ASSEMBLER__ */
+#endif				/* !JOS_INC_MEMLAYOUT_H */

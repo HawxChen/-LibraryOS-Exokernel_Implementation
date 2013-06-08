@@ -1,11 +1,10 @@
 #ifndef JOS_INC_ELF_H
 #define JOS_INC_ELF_H
 
-#define ELF_MAGIC 0x464C457FU   /* "\x7FELF" in little endian */
+#define ELF_MAGIC 0x464C457FU	/* "\x7FELF" in little endian */
 
-struct Elf
-{
-    uint32_t e_magic;           // must equal ELF_MAGIC
+struct Elf {
+    uint32_t e_magic;		// must equal ELF_MAGIC
     uint8_t e_elf[12];
     uint16_t e_type;
     uint16_t e_machine;
@@ -22,8 +21,7 @@ struct Elf
     uint16_t e_shstrndx;
 };
 
-struct Proghdr
-{
+struct Proghdr {
     uint32_t p_type;
     uint32_t p_offset;
     uint32_t p_va;
@@ -34,8 +32,7 @@ struct Proghdr
     uint32_t p_align;
 };
 
-struct Secthdr
-{
+struct Secthdr {
     uint32_t sh_name;
     uint32_t sh_type;
     uint32_t sh_flags;
@@ -65,4 +62,4 @@ struct Secthdr
 // Values for Secthdr::sh_name
 #define ELF_SHN_UNDEF		0
 
-#endif /* !JOS_INC_ELF_H */
+#endif				/* !JOS_INC_ELF_H */
