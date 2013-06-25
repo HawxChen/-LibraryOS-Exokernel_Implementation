@@ -1,0 +1,242 @@
+It can reference the Hw8.txt about what each log_write writes.
+
+log_write sector 29 from writei
+    #0  log_write (b=0x8010d384, caller=0x8010835c "writei") at log.c:153
+    #1  0x801020e1 in writei (ip=0x8010e8f4, src=0x8dfbef08 "", off=32, n=16, name=0x80108839 "sys_unlink") at fs.c:472
+    #2  0x801058f1 in sys_unlink () at sysfile.c:202
+    #3  0x801052b1 in syscall () at syscall.c:157
+    #4  0x8010645d in trap (tf=0x8dfbefb4) at trap.c:41
+    #5  0x80106251 in ?? () at trapasm.S:23
+
+bwrite sector 1015
+//write the parent dir's data block into the log block for dirent
+//Now write it into the log block 
+    #0  bwrite (b=0x8010cb24) at bio.c:106
+    #1  0x8010347d in log_write (b=0x8010d384, caller=0x8010835c "writei") at log.c:170
+    #2  0x801020e1 in writei (ip=0x8010e8f4, src=0x8dfbef08 "", off=32, n=16, name=0x80108839 "sys_unlink") at fs.c:472
+    #3  0x801058f1 in sys_unlink () at sysfile.c:202
+    #4  0x801052b1 in syscall () at syscall.c:157
+    #5  0x8010645d in trap (tf=0x8dfbefb4) at trap.c:41
+    #6  0x80106251 in ?? () at trapasm.S:23
+
+log_write sector 2 from iupdate
+    #0  log_write (b=0x8010c90c, caller=0x80108305 "iupdate") at log.c:153
+    #1  0x80101825 in iupdate (ip=0x8010e994) at fs.c:213
+    #2  0x80105952 in sys_unlink () at sysfile.c:212
+    #3  0x801052b1 in syscall () at syscall.c:157
+    #4  0x8010645d in trap (tf=0x8dfbefb4) at trap.c:41
+    #5  0x80106251 in ?? () at trapasm.S:23
+
+bwrite sector 1016
+//write the file: "README"'s indoe into the corresponding block for nlink--
+//Now write it into the log block 
+    #0  bwrite (b=0x8010d16c) at bio.c:106
+    #1  0x8010347d in log_write (b=0x8010c90c, caller=0x80108305 "iupdate") at log.c:170
+    #2  0x80101825 in iupdate (ip=0x8010e994) at fs.c:213
+    #3  0x80105952 in sys_unlink () at sysfile.c:212
+    #4  0x801052b1 in syscall () at syscall.c:157
+    #5  0x8010645d in trap (tf=0x8dfbefb4) at trap.c:41
+    #6  0x80106251 in ?? () at trapasm.S:23
+
+log_write sector 28 from bfree
+    #0  log_write (b=0x8010cf54, caller=0x801082df "bfree") at log.c:153
+    #1  0x8010165d in bfree (dev=1, b=30) at fs.c:94
+    #2  0x80101d24 in itrunc (ip=0x8010e994) at fs.c:390
+    #3  0x80101b6c in iput (ip=0x8010e994) at fs.c:320
+    #4  0x80101bda in iunlockput (ip=0x8010e994) at fs.c:335
+    #5  0x8010595d in sys_unlink () at sysfile.c:213
+    #6  0x801052b1 in syscall () at syscall.c:157
+    #7  0x8010645d in trap (tf=0x8dfbefb4) at trap.c:41
+    #8  0x80106251 in ?? () at trapasm.S:23
+
+bwrite sector 1017
+//free the corresponding bitmap block
+//Here, It has used the log absorbtion
+    #0  bwrite (b=0x8010d9cc) at bio.c:106
+    #1  0x8010347d in log_write (b=0x8010cf54, caller=0x801082df "bfree") at log.c:170
+    #2  0x8010165d in bfree (dev=1, b=30) at fs.c:94
+    #3  0x80101d24 in itrunc (ip=0x8010e994) at fs.c:390
+    #4  0x80101b6c in iput (ip=0x8010e994) at fs.c:320
+    #5  0x80101bda in iunlockput (ip=0x8010e994) at fs.c:335
+    #6  0x8010595d in sys_unlink () at sysfile.c:213
+    #7  0x801052b1 in syscall () at syscall.c:157
+    #8  0x8010645d in trap (tf=0x8dfbefb4) at trap.c:41
+    #9  0x80106251 in ?? () at trapasm.S:23
+
+log_write sector 28 from bfree
+    #0  log_write (b=0x8010cf54, caller=0x801082df "bfree") at log.c:153
+    #1  0x8010165d in bfree (dev=1, b=31) at fs.c:94
+    #2  0x80101d24 in itrunc (ip=0x8010e994) at fs.c:390
+    #3  0x80101b6c in iput (ip=0x8010e994) at fs.c:320
+    #4  0x80101bda in iunlockput (ip=0x8010e994) at fs.c:335
+    #5  0x8010595d in sys_unlink () at sysfile.c:213
+    #6  0x801052b1 in syscall () at syscall.c:157
+    #7  0x8010645d in trap (tf=0x8dfbefb4) at trap.c:41
+    #8  0x80106251 in ?? () at trapasm.S:23
+
+bwrite sector 1017
+//free the corresponding bitmap block
+    #0  bwrite (b=0x8010d9cc) at bio.c:106
+    #1  0x8010347d in log_write (b=0x8010cf54, caller=0x801082df "bfree") at log.c:170
+    #2  0x8010165d in bfree (dev=1, b=31) at fs.c:94
+    #3  0x80101d24 in itrunc (ip=0x8010e994) at fs.c:390
+    #4  0x80101b6c in iput (ip=0x8010e994) at fs.c:320
+    #5  0x80101bda in iunlockput (ip=0x8010e994) at fs.c:335
+    #6  0x8010595d in sys_unlink () at sysfile.c:213
+    #7  0x801052b1 in syscall () at syscall.c:157
+    #8  0x8010645d in trap (tf=0x8dfbefb4) at trap.c:41
+    #9  0x80106251 in ?? () at trapasm.S:23
+
+log_write sector 28 from bfree
+    #0  log_write (b=0x8010cf54, caller=0x801082df "bfree") at log.c:153
+    #1  0x8010165d in bfree (dev=1, b=32) at fs.c:94
+    #2  0x80101d24 in itrunc (ip=0x8010e994) at fs.c:390
+    #3  0x80101b6c in iput (ip=0x8010e994) at fs.c:320
+    #4  0x80101bda in iunlockput (ip=0x8010e994) at fs.c:335
+    #5  0x8010595d in sys_unlink () at sysfile.c:213
+    #6  0x801052b1 in syscall () at syscall.c:157
+    #7  0x8010645d in trap (tf=0x8dfbefb4) at trap.c:41
+    #8  0x80106251 in ?? () at trapasm.S:23
+
+bwrite sector 1017
+//free the corresponding bitmap block
+    #0  bwrite (b=0x8010d9cc) at bio.c:106
+    #1  0x8010347d in log_write (b=0x8010cf54, caller=0x801082df "bfree") at log.c:170
+    #2  0x8010165d in bfree (dev=1, b=32) at fs.c:94
+    #3  0x80101d24 in itrunc (ip=0x8010e994) at fs.c:390
+    #4  0x80101b6c in iput (ip=0x8010e994) at fs.c:320
+    #5  0x80101bda in iunlockput (ip=0x8010e994) at fs.c:335
+    #6  0x8010595d in sys_unlink () at sysfile.c:213
+    #7  0x801052b1 in syscall () at syscall.c:157
+    #8  0x8010645d in trap (tf=0x8dfbefb4) at trap.c:41
+    #9  0x80106251 in ?? () at trapasm.S:23
+
+log_write sector 28 from bfree
+    #0  log_write (b=0x8010cf54, caller=0x801082df "bfree") at log.c:153
+    #1  0x8010165d in bfree (dev=1, b=33) at fs.c:94
+    #2  0x80101d24 in itrunc (ip=0x8010e994) at fs.c:390
+    #3  0x80101b6c in iput (ip=0x8010e994) at fs.c:320
+    #4  0x80101bda in iunlockput (ip=0x8010e994) at fs.c:335
+    #5  0x8010595d in sys_unlink () at sysfile.c:213
+    #6  0x801052b1 in syscall () at syscall.c:157
+    #7  0x8010645d in trap (tf=0x8dfbefb4) at trap.c:41
+    #8  0x80106251 in ?? () at trapasm.S:23
+
+bwrite sector 1017
+//free the corresponding bitmap block
+    #0  bwrite (b=0x8010d9cc) at bio.c:106
+    #1  0x8010347d in log_write (b=0x8010cf54, caller=0x801082df "bfree") at log.c:170
+    #2  0x8010165d in bfree (dev=1, b=33) at fs.c:94
+    #3  0x80101d24 in itrunc (ip=0x8010e994) at fs.c:390
+    #4  0x80101b6c in iput (ip=0x8010e994) at fs.c:320
+    #5  0x80101bda in iunlockput (ip=0x8010e994) at fs.c:335
+    #6  0x8010595d in sys_unlink () at sysfile.c:213
+    #7  0x801052b1 in syscall () at syscall.c:157
+    #8  0x8010645d in trap (tf=0x8dfbefb4) at trap.c:41
+    #9  0x80106251 in ?? () at trapasm.S:23
+
+log_write sector 2 from iupdate
+    #0  log_write (b=0x8010c90c, caller=0x80108305 "iupdate") at log.c:153
+    #1  0x80101825 in iupdate (ip=0x8010e994) at fs.c:213
+    #2  0x80101df1 in itrunc (ip=0x8010e994) at fs.c:408
+    #3  0x80101b6c in iput (ip=0x8010e994) at fs.c:320
+    #4  0x80101bda in iunlockput (ip=0x8010e994) at fs.c:335
+    #5  0x8010595d in sys_unlink () at sysfile.c:213
+    #6  0x801052b1 in syscall () at syscall.c:157
+    #7  0x8010645d in trap (tf=0x8dfbefb4) at trap.c:41
+    #8  0x80106251 in ?? () at trapasm.S:23
+
+bwrite sector 1016
+write the size=0 into the file's indoe block
+    #0  bwrite (b=0x8010d16c) at bio.c:106
+    #1  0x8010347d in log_write (b=0x8010c90c, caller=0x80108305 "iupdate") at log.c:170
+    #2  0x80101825 in iupdate (ip=0x8010e994) at fs.c:213
+    #3  0x80101df1 in itrunc (ip=0x8010e994) at fs.c:408
+    #4  0x80101b6c in iput (ip=0x8010e994) at fs.c:320
+    #5  0x80101bda in iunlockput (ip=0x8010e994) at fs.c:335
+    #6  0x8010595d in sys_unlink () at sysfile.c:213
+    #7  0x801052b1 in syscall () at syscall.c:157
+    #8  0x8010645d in trap (tf=0x8dfbefb4) at trap.c:41
+    #9  0x80106251 in ?? () at trapasm.S:23
+
+log_write sector 2 from iupdate
+    #0  log_write (b=0x8010c90c, caller=0x80108305 "iupdate") at log.c:153
+    #1  0x80101825 in iupdate (ip=0x8010e994) at fs.c:213
+    #2  0x80101b80 in iput (ip=0x8010e994) at fs.c:322
+    #3  0x80101bda in iunlockput (ip=0x8010e994) at fs.c:335
+    #4  0x8010595d in sys_unlink () at sysfile.c:213
+    #5  0x801052b1 in syscall () at syscall.c:157
+    #6  0x8010645d in trap (tf=0x8dfbefb4) at trap.c:41
+    #7  0x80106251 in ?? () at trapasm.S:23
+
+bwrite sector 1016
+//write inot the file's indoe block about major/type/minor/nlink/...etc
+    #0  bwrite (b=0x8010d16c) at bio.c:106
+    #1  0x8010347d in log_write (b=0x8010c90c, caller=0x80108305 "iupdate") at log.c:170
+    #2  0x80101825 in iupdate (ip=0x8010e994) at fs.c:213
+    #3  0x80101b80 in iput (ip=0x8010e994) at fs.c:322
+    #4  0x80101bda in iunlockput (ip=0x8010e994) at fs.c:335
+    #5  0x8010595d in sys_unlink () at sysfile.c:213
+    #6  0x801052b1 in syscall () at syscall.c:157
+    #7  0x8010645d in trap (tf=0x8dfbefb4) at trap.c:41
+    #8  0x80106251 in ?? () at trapasm.S:23
+
+//commit_trans()
+bwrite sector 1014
+    #0  bwrite (b=0x8010cd3c) at bio.c:106
+    #1  0x801032bb in write_head () at log.c:107
+    #2  0x80103346 in commit_trans () at log.c:132
+    #3  0x80105962 in sys_unlink () at sysfile.c:215
+    #4  0x801052b1 in syscall () at syscall.c:157
+    #5  0x8010645d in trap (tf=0x8dfbefb4) at trap.c:41
+    #6  0x80106251 in ?? () at trapasm.S:23
+    
+//write into the real disk section
+bwrite sector 29
+    #0  bwrite (b=0x8010d384) at bio.c:106
+    #1  0x801031b4 in install_trans () at log.c:76
+    #2  0x8010334b in commit_trans () at log.c:133
+    #3  0x80105962 in sys_unlink () at sysfile.c:215
+    #4  0x801052b1 in syscall () at syscall.c:157
+    #5  0x8010645d in trap (tf=0x8dfbefb4) at trap.c:41
+    #6  0x80106251 in ?? () at trapasm.S:23
+
+bwrite sector 2
+    #0  bwrite (b=0x8010c90c) at bio.c:106
+    #1  0x801031b4 in install_trans () at log.c:76
+    #2  0x8010334b in commit_trans () at log.c:133
+    #3  0x80105962 in sys_unlink () at sysfile.c:215
+    #4  0x801052b1 in syscall () at syscall.c:157
+    #5  0x8010645d in trap (tf=0x8dfbefb4) at trap.c:41
+    #6  0x80106251 in ?? () at trapasm.S:23
+
+bwrite sector 28
+    #0  bwrite (b=0x8010cf54) at bio.c:106
+    #1  0x801031b4 in install_trans () at log.c:76
+    #2  0x8010334b in commit_trans () at log.c:133
+    #3  0x80105962 in sys_unlink () at sysfile.c:215
+    #4  0x801052b1 in syscall () at syscall.c:157
+    #5  0x8010645d in trap (tf=0x8dfbefb4) at trap.c:41
+    #6  0x80106251 in ?? () at trapasm.S:23
+
+//write the "log.lh.n=0" into the head log block
+bwrite sector 1014
+    #0  bwrite (b=0x8010cd3c) at bio.c:106
+    #1  0x801032bb in write_head () at log.c:107
+    #2  0x8010335a in commit_trans () at log.c:135
+    #3  0x80105962 in sys_unlink () at sysfile.c:215
+    #4  0x801052b1 in syscall () at syscall.c:157
+    #5  0x8010645d in trap (tf=0x8dfbefb4) at trap.c:41
+    #6  0x80106251 in ?? () at trapasm.S:23
+
+
+======================================
+log_write sector 29 from writei
+log_write sector 2 from iupdate
+log_write sector 28 from bfree
+log_write sector 28 from bfree
+log_write sector 28 from bfree
+log_write sector 28 from bfree
+log_write sector 2 from iupdate
+log_write sector 2 from iupdate
+
